@@ -1,3 +1,8 @@
-#ignore the bat files && ignore .txt files
+# Node.js dependencies
+node_modules/
+
+# Text files
 *.txt
+
+# Batch files
 *.bat
