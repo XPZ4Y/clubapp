@@ -1,0 +1,3 @@
+#ignore the bat files && ignore .txt files
+*.txt
+*.bat
