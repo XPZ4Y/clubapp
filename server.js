@@ -6,7 +6,7 @@ const port = 3000;
 
 const server = http.createServer((req, res) => {
     // Serve index.html for all routesesfe
-    const filePath = path.join(__dirname, 'indewwx.html');
+    const filePath = path.join(__dirname, 'index.html');
     
     fs.readFile(filePath, (err, data) => {
         if (err) {
