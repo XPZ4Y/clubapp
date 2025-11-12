@@ -1,0 +1,81 @@
+:root{
+  --bg:#FCFEFF; --card:#FFFFFF; --primary:#2563EB; --accent:#FB923C;
+  --muted:#6B7280; --success:#10B981; --danger:#EF4444;
+  --radius:16px; --gap:12px; --shadow: 0 10px 30px rgba(15,23,42,0.06);
+  --max-w:1300px;
+}
+*{box-sizing:border-box}
+html,body{height:100%; margin:0; font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial; background:var(--bg); color:#071229}
+.app{max-width:var(--max-w); margin:0 auto; padding:16px;}
+
+/* Topbar */
+.topbar{height:64px; display:flex; align-items:center; gap:12px; margin-bottom:12px}
+.logo{font-weight:900; font-size:18px; color:var(--primary); display:flex; gap:8px; align-items:center}
+.logo .dot{width:14px;height:14px;border-radius:50%;background:var(--accent); display:inline-block; transform:rotate(20deg)}
+.search{flex:1; display:flex; align-items:center; background:#F3F7FB; padding:10px 14px; border-radius:12px}
+.search input{border:0; outline:0; background:transparent; width:100%; font-size:15px}
+.icon-btn{width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; border-radius:12px; background:#fff; box-shadow:var(--shadow); border:0; cursor:pointer}
+
+/* Chips */
+.chips{display:flex; gap:8px; overflow:auto; padding:6px 4px; margin-bottom:12px}
+.chips button{flex:0 0 auto; background:#fff; color:var(--muted); border-radius:999px; border:0; padding:8px 12px; font-size:14px; box-shadow: 0 6px 18px rgba(15,23,42,0.04); cursor:pointer}
+
+/* Layout */
+.layout{display:block}
+.feed{display:flex; flex-direction:column; gap:12px; padding-bottom:160px}
+.card{display:grid; grid-template-columns:56px 1fr auto; gap:10px; align-items:center;
+  background:var(--card); padding:14px; border-radius:16px; box-shadow:var(--shadow); position:relative;}
+.avatar{width:56px; height:56px; border-radius:12px; object-fit:cover; background:linear-gradient(135deg,#ffd59a,#ff9aa2); display:flex; align-items:center; justify-content:center; color:#071229; font-weight:800; font-size:18px}
+.content .title{font-size:16px; font-weight:800; margin:0 0 6px 0}
+.content .tagline{font-size:13px; color:var(--muted); margin:0 0 6px 0}
+.meta{font-size:13px; color:var(--muted)}
+.actions{display:flex; flex-direction:column; gap:8px; align-items:flex-end}
+.btn-cta{background:linear-gradient(90deg,var(--primary), #60a5fa); color:#fff; border:0; padding:10px 14px; border-radius:999px; font-weight:800; min-width:92px; height:44px; box-shadow: 0 8px 22px rgba(37,99,235,0.14); cursor:pointer}
+.more{background:transparent; border:0; font-size:20px; color:var(--muted); cursor:pointer}
+
+/* micro-map */
+.micro-map{position:absolute; right:12px; bottom:10px; width:96px; height:64px; border-radius:12px; overflow:hidden; border:1px solid rgba(7,18,41,0.04); box-shadow: 0 6px 18px rgba(15,23,42,0.04); cursor:pointer}
+.micro-map img, .micro-map svg{width:100%; height:100%; display:block}
+
+/* Bottom nav */
+.bottom-nav{position:fixed; left:16px; right:16px; bottom:16px; display:flex; justify-content:space-around; gap:8px; padding:8px; background:transparent; pointer-events:none}
+.fab{pointer-events:auto; width:66px; height:66px; border-radius:999px; background:linear-gradient(90deg,var(--primary),#60a5fa); color:#fff; display:flex; align-items:center; justify-content:center; font-size:30px; box-shadow:var(--shadow); border:0; cursor:pointer}
+
+/* Modal / sheet */
+.modal, .sheet{position:fixed; left:16px; right:16px; bottom:16px; background:var(--card); border-radius:18px; box-shadow:var(--shadow); padding:16px; transform:translateY(110%); transition:transform .36s cubic-bezier(.22,.9,.3,1); max-height:86vh; overflow:auto; z-index:60}
+.modal.show, .sheet.show{transform:translateY(0)}
+.modal .title{font-size:18px; font-weight:900; margin:0 0 8px 0}
+.close-btn{position:absolute; right:18px; top:12px; background:transparent; border:0; font-size:20px; cursor:pointer}
+
+/* Centered auth modal (updated) */
+#authModal.centered{ left:50%; top:50%; bottom:auto; transform:translate(-50%,-50%) scale(1); opacity:1; pointer-events:auto; position:fixed; z-index:70; max-width:640px; }
+
+/* Map container inside modal */
+.map-small{width:100%; height:220px; border-radius:12px; margin:8px 0;}
+
+/* Auth modal default hidden style */
+#authModal{ left:50%; top:50%; bottom:auto; transform:translate(-50%,-50%) scale(0.8); opacity:0; pointer-events:none; position:fixed; z-index:70; max-width:640px; transition:transform .3s cubic-bezier(.22,.9,.3,1), opacity .3s; }
+
+/* Overlay */
+#modalOverlay{ position:fixed; inset:0; background:rgba(7,18,41,0.45); z-index:60; opacity:0; transition:opacity .2s; pointer-events:none; }
+
+/* Account & About modals */
+#accountModal, #aboutModal{ position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(0.95); opacity:0; pointer-events:none; z-index:75; max-width:760px; width:92%; padding:18px; border-radius:14px; box-shadow:0 20px 60px rgba(15,23,42,0.12); background:var(--card); transition:opacity .25s, transform .25s; }
+
+/* Visible state */
+.modal.visible, .sheet.visible, #accountModal.visible, #aboutModal.visible{ opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
+
+/* Toast */
+.toast{position:fixed; left:50%; transform:translateX(-50%); bottom:98px; background:rgba(7,18,41,0.92); color:#fff; padding:10px 14px; border-radius:12px; z-index:80; opacity:0; transition:opacity .3s}
+.toast.show{opacity:1}
+
+/* Profile drawer responsive */
+@media(min-width:980px){
+  .layout{display:grid; grid-template-columns:420px 1fr; gap:20px; align-items:start}
+  .feed{padding:0}
+  .micro-map{display:none}
+  .bottom-nav{display:none}
+  .topbar{padding:8px 0}
+  .app{padding:20px}
+  #rightPanel{display:block}
+}

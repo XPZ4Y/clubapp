@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HyperLocal — Polished Prototype (Fixed Buttons)</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="app" id="appRoot">
+    <div class="topbar">
+      <div class="logo"><span class="dot"></span>HyperLocal</div>
+      <div class="search" role="search" aria-label="search">
+        <input id="searchInput" placeholder="Find hangouts, clubs or people — try 'music' or 'run'..." />
+      </div>
+      <button id="menuBtn" class="icon-btn" aria-label="menu">≡</button>
+      <button id="loginBtn" class="icon-btn" aria-label="login">🔐</button>
+      <button id="profileBtn" class="icon-btn" aria-label="profile">🙂</button>
+    </div>
+
+    <div class="chips" id="chips" aria-hidden="false">
+      <button data-filter="now">Now</button>
+      <button data-filter="nearby">Nearby</button>
+      <button data-filter="today">Today</button>
+      <button data-filter="music">Music</button>
+      <button data-filter="sports">Sports</button>
+      <button data-filter="tech">Tech</button>
+    </div>
+
+    <div class="layout" id="layout">
+      <main id="mainFeed" class="feed" aria-live="polite" aria-label="Event feed">
+        <!-- Event cards injected here -->
+      </main>
+
+      <aside id="rightPanel" aria-label="Details panel" style="display:none">
+        <div style="background:var(--card); padding:12px; border-radius:12px; box-shadow:var(--shadow); margin-bottom:12px">
+          <h3 style="margin:0 0 8px 0">Details</h3>
+          <div id="rightDetail">Select an event to see details here.</div>
+        </div>
+        <div style="background:var(--card); padding:12px; border-radius:12px; box-shadow:var(--shadow);">
+          <h3 style="margin:0 0 8px 0">Map</h3>
+          <div id="rightMap" style="height:420px; border-radius:12px; overflow:hidden"></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="bottom-nav" aria-hidden="false">
+      <button class="icon-btn" title="Home" id="homeBtn">🏠</button>
+      <button class="icon-btn" title="Search" id="searchBtn">🔍</button>
+      <button id="fab" class="fab" aria-label="create">＋</button>
+      <button class="icon-btn" title="Inbox" id="inboxBtn">💬</button>
+      <button class="icon-btn" title="Profile" id="profileBtnBottom">👤</button>
+    </div>
+  </div>
+
+  <!-- Overlay for modals -->
+  <div id="modalOverlay"></div>
+
+  <!-- Auth modal (login/register) -->
+  <div id="authModal" class="modal" role="dialog" aria-hidden="true">
+    <button class="close-btn" id="closeAuth" aria-label="close">✕</button>
+    <div class="auth-modal" id="authContent">
+      <h3 id="authTitle">Log in</h3>
+      <div id="loginForm">
+        <div class="auth-row"><input id="loginEmail" class="input" placeholder="Email" type="email" /></div>
+        <div class="auth-row"><input id="loginPass" class="input" placeholder="Password" type="password" /></div>
+        <div style="display:flex; gap:8px; justify-content:space-between">
+          <button id="showRegister" class="btn-cta" style="flex:1">Create account</button>
+          <button id="doLogin" class="btn-cta" style="flex:1">Log in</button>
+        </div>
+      </div>
+
+      <div id="registerForm" style="display:none; margin-top:12px">
+        <div class="auth-row"><input id="regName" class="input" placeholder="Full name" /></div>
+        <div class="auth-row"><input id="regEmail" class="input" placeholder="Email" type="email" /></div>
+        <div class="auth-row"><input id="regPass" class="input" placeholder="Password (min 6 chars)" type="password" /></div>
+        <div style="display:flex; gap:8px; justify-content:space-between; margin-top:8px">
+          <button id="showLogin" class="btn-cta" style="flex:1">Back</button>
+          <button id="doRegister" class="btn-cta" style="flex:1">Sign up</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Event modal (mobile) -->
+  <div id="eventModal" class="modal" role="dialog" aria-hidden="true">
+    <button class="close-btn" id="closeModal" aria-label="close">✕</button>
+    <div id="eventContent"></div>
+  </div>
+
+  <!-- Create sheet -->
+  <div id="createSheet" class="sheet" role="dialog" aria-hidden="true" style="left:auto; right:16px; width:360px; transform:translateY(110%);">
+    <button class="close-btn" id="closeCreate" aria-label="close">✕</button>
+    <h3 style="margin-top:0">Quick create</h3>
+    <div id="createStep1" class="create-step">
+      <div class="form-row">
+        <label>What?</label>
+        <input id="evTitle" class="input" placeholder="e.g., Park jam session" />
+      </div>
+      <div class="row">
+        <input id="evTime" class="input" type="datetime-local" />
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-top:8px">
+        <button id="toStep2" class="btn-cta">Next</button>
+      </div>
+    </div>
+    <div id="createStep2" class="create-step" style="display:none">
+      <div class="form-row">
+        <label>Where? (optional)</label>
+        <input id="evPlace" class="input" placeholder="Park north entrance" />
+      </div>
+      <div class="form-row">
+        <label>Visibility</label>
+        <select id="evVis" class="select">
+          <option value="public">Open to all</option>
+          <option value="invite">Invite only</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:space-between; gap:8px">
+        <button id="backTo1" class="btn-cta" style="flex:1">Back</button>
+        <button id="publishBtn" class="btn-cta" style="flex:1">Publish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account modal -->
+  <div id="accountModal" role="dialog" aria-hidden="true">
+    <button class="close-btn" id="closeAccount">✕</button>
+    <h3>Account</h3>
+    <div id="accountContent" style="margin-top:12px; color:var(--muted)"></div>
+  </div>
+
+  <!-- About modal -->
+  <div id="aboutModal" role="dialog" aria-hidden="true">
+    <button class="close-btn" id="closeAbout">✕</button>
+    <h3>About HyperLocal</h3>
+    <p style="color:var(--muted)">This is a prototype. The map, auth and events are mock implementations for demo purposes.</p>
+  </div>
+
+  <!-- Profile drawer -->
+  <div id="profileDrawer" class="sheet" role="dialog" aria-hidden="true" style="left:auto; right:16px; bottom:16px; width:320px; transform:translateY(110%);">
+    <button class="close-btn" id="closeProfile" aria-label="close">✕</button>
+    <div id="profileContent" style="padding:8px"></div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
