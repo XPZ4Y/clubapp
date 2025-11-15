@@ -2,341 +2,295 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>HyperLocal — Polished Prototype (Fixed Buttons)</title>
-
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>HyperLocal — Polished Mobile (Light & Dark, Responsive)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
+<meta name="theme-color" content="#ffffff" id="meta-theme" />
 <style>
 :root{
-  --bg:#FCFEFF; --card:#FFFFFF; --primary:#2563EB; --accent:#FB923C;
-  --muted:#6B7280; --success:#10B981; --danger:#EF4444;
-  --radius:16px; --gap:12px; --shadow: 0 10px 30px rgba(15,23,42,0.06);
-  --max-w:1300px;
+  --bg:#F7FBFF; --card:#FFFFFF; --primary:#2563EB; --accent:#FF7A59; --muted:#566270; --glass:rgba(255,255,255,0.72);
+  --shadow:0 8px 30px rgba(15,23,42,0.08); --radius:14px; --gap:12px; --max-w:980px; --text:#071229;
 }
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#071226; --card:#0b1220; --primary:#4f9cff; --accent:#ff8a66; --muted:#9aa6b2; --glass:rgba(8,12,18,0.6); --shadow:0 8px 30px rgba(0,0,0,0.6); --text:#E6F0FF; }
+}
+/* safe area & responsive tweaks */
+:root{ --safe-bottom: env(safe-area-inset-bottom); }
 *{box-sizing:border-box}
-html,body{height:100%; margin:0; font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial; background:var(--bg); color:#071229}
-.app{max-width:var(--max-w); margin:0 auto; padding:16px;}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+body{transition:background .28s ease}
+.app{max-width:var(--max-w);margin:0 auto;padding:14px;}
 
-/* Topbar */
-.topbar{height:64px; display:flex; align-items:center; gap:12px; margin-bottom:12px}
-.logo{font-weight:900; font-size:18px; color:var(--primary); display:flex; gap:8px; align-items:center}
-.logo .dot{width:14px;height:14px;border-radius:50%;background:var(--accent); display:inline-block; transform:rotate(20deg)}
-.search{flex:1; display:flex; align-items:center; background:#F3F7FB; padding:10px 14px; border-radius:12px}
-.search input{border:0; outline:0; background:transparent; width:100%; font-size:15px}
-.icon-btn{width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; border-radius:12px; background:#fff; box-shadow:var(--shadow); border:0; cursor:pointer}
+/* Header */
+.header{display:flex;gap:10px;align-items:center;padding:8px 6px}
+.brand{display:flex;gap:10px;align-items:center}
+.logo-dot{width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ffb37b);box-shadow:0 4px 14px rgba(0,0,0,0.06)}
+.title{font-weight:800;color:var(--primary);font-size:16px}
+.searchWrap{flex:1;display:flex;align-items:center;gap:8px}
+.search{flex:1;background:var(--glass);padding:10px;border-radius:12px;display:flex;align-items:center;border:1px solid rgba(86,98,112,0.05)}
+.search input{border:0;outline:0;background:transparent;width:100%;font-size:15px;color:inherit}
+.icon-btn{width:44px;height:44px;border-radius:12px;background:var(--card);border:0;box-shadow:var(--shadow);display:inline-flex;align-items:center;justify-content:center}
 
-/* Chips */
-.chips{display:flex; gap:8px; overflow:auto; padding:6px 4px; margin-bottom:12px}
-.chips button{flex:0 0 auto; background:#fff; color:var(--muted); border-radius:999px; border:0; padding:8px 12px; font-size:14px; box-shadow: 0 6px 18px rgba(15,23,42,0.04); cursor:pointer}
+/* Filters */
+.filters{display:flex;gap:10px;overflow:auto;padding:8px 4px;margin:10px 0}
+.filter{flex:0 0 auto;background:transparent;border:1px solid rgba(86,98,112,0.06);padding:8px 12px;border-radius:999px;color:var(--muted);font-size:14px}
+.filter.active{background:linear-gradient(90deg,var(--primary),#60a5fa);color:#fff;border-color:transparent;box-shadow:0 8px 26px rgba(37,99,235,0.12)}
 
-/* Layout */
-.layout{display:block}
-.feed{display:flex; flex-direction:column; gap:12px; padding-bottom:160px}
-.card{display:grid; grid-template-columns:56px 1fr auto; gap:10px; align-items:center;
-  background:var(--card); padding:14px; border-radius:16px; box-shadow:var(--shadow); position:relative;}
-.avatar{width:56px; height:56px; border-radius:12px; object-fit:cover; background:linear-gradient(135deg,#ffd59a,#ff9aa2); display:flex; align-items:center; justify-content:center; color:#071229; font-weight:800; font-size:18px}
-.content .title{font-size:16px; font-weight:800; margin:0 0 6px 0}
-.content .tagline{font-size:13px; color:var(--muted); margin:0 0 6px 0}
-.meta{font-size:13px; color:var(--muted)}
-.actions{display:flex; flex-direction:column; gap:8px; align-items:flex-end}
-.btn-cta{background:linear-gradient(90deg,var(--primary), #60a5fa); color:#fff; border:0; padding:10px 14px; border-radius:999px; font-weight:800; min-width:92px; height:44px; box-shadow: 0 8px 22px rgba(37,99,235,0.14); cursor:pointer}
-.more{background:transparent; border:0; font-size:20px; color:var(--muted); cursor:pointer}
+/* Feed */
+.feed{display:flex;flex-direction:column;gap:12px;padding-bottom:calc(140px + var(--safe-bottom))}
+.card{display:flex;gap:12px;align-items:center;background:var(--card);padding:12px;border-radius:var(--radius);box-shadow:var(--shadow);transition:transform .18s ease,box-shadow .18s ease}
+.card:active{transform:translateY(1px)}
+.avatar{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,#ffd59a,#ff9aa2);display:flex;align-items:center;justify-content:center;font-weight:700}
+.info{flex:1}
+.name{font-weight:800;font-size:15px;margin:0}
+.desc{font-size:13px;color:var(--muted);margin-top:6px}
+.meta{font-size:13px;color:var(--muted);margin-top:6px}
+.action-row{display:flex;gap:8px;align-items:center}
+.btn{padding:10px 14px;border-radius:999px;border:0;font-weight:700;cursor:pointer;transition:transform .12s ease}
+.btn.primary{background:linear-gradient(90deg,var(--primary),#60a5fa);color:#fff}
+.btn.ghost{background:transparent;border:1px solid rgba(86,98,112,0.08);color:var(--muted)}
+.micro{width:78px;height:52px;border-radius:10px;overflow:hidden;border:1px solid rgba(7,18,41,0.04);display:flex;align-items:center;justify-content:center}
 
-/* micro-map */
-.micro-map{position:absolute; right:12px; bottom:10px; width:96px; height:64px; border-radius:12px; overflow:hidden; border:1px solid rgba(7,18,41,0.04); box-shadow: 0 6px 18px rgba(15,23,42,0.04); cursor:pointer}
-.micro-map img, .micro-map svg{width:100%; height:100%; display:block}
+/* Bottom nav — includes chat */
+.bottom{position:fixed;left:12px;right:12px;bottom:calc(12px + var(--safe-bottom));padding:8px;background:var(--glass);backdrop-filter:blur(8px);display:flex;justify-content:space-between;align-items:center;border-radius:999px;box-shadow:0 12px 32px rgba(15,23,42,0.08);z-index:60}
+.icon{width:48px;height:48px;border-radius:12px;background:var(--card);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+.fab{width:60px;height:60px;border-radius:999px;background:linear-gradient(90deg,var(--primary),#60a5fa);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;border:0}
 
-/* Bottom nav */
-.bottom-nav{position:fixed; left:16px; right:16px; bottom:16px; display:flex; justify-content:space-around; gap:8px; padding:8px; background:transparent; pointer-events:none}
-.fab{pointer-events:auto; width:66px; height:66px; border-radius:999px; background:linear-gradient(90deg,var(--primary),#60a5fa); color:#fff; display:flex; align-items:center; justify-content:center; font-size:30px; box-shadow:var(--shadow); border:0; cursor:pointer}
+/* Chat badge */
+.badge{position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border-radius:999px;padding:4px 6px;font-size:11px;box-shadow:0 4px 10px rgba(0,0,0,0.2)}
 
-/* Modal / sheet */
-.modal, .sheet{position:fixed; left:16px; right:16px; bottom:16px; background:var(--card); border-radius:18px; box-shadow:var(--shadow); padding:16px; transform:translateY(110%); transition:transform .36s cubic-bezier(.22,.9,.3,1); max-height:86vh; overflow:auto; z-index:60}
-.modal.show, .sheet.show{transform:translateY(0)}
-.modal .title{font-size:18px; font-weight:900; margin:0 0 8px 0}
-.close-btn{position:absolute; right:18px; top:12px; background:transparent; border:0; font-size:20px; cursor:pointer}
+/* Modal / Sheet */
+.modal{position:fixed;left:10px;right:10px;bottom:10px;background:var(--card);border-radius:16px;padding:14px;transform:translateY(110%);transition:transform .32s cubic-bezier(.22,.9,.3,1),opacity .24s;max-height:88vh;overflow:auto;z-index:80}
+.modal.show{transform:translateY(0);opacity:1}
+.modal .close{position:absolute;right:14px;top:12px;border:0;background:transparent;font-size:18px}
 
-/* Centered auth modal (updated) */
-#authModal.centered{ left:50%; top:50%; bottom:auto; transform:translate(-50%,-50%) scale(1); opacity:1; pointer-events:auto; position:fixed; z-index:70; max-width:640px; }
+.sheet{position:fixed;right:12px;left:12px;bottom:12px;background:var(--card);padding:12px;border-radius:12px;transform:translateY(110%);transition:transform .28s;box-shadow:var(--shadow);z-index:80}
+.sheet.show{transform:translateY(0)}
+.sheet .sheet-close{position:absolute;right:16px;top:12px;background:transparent;border:0;font-size:18px}
+.sheet .map-small{width:100%;height:180px;border-radius:10px;margin-top:8px;overflow:hidden}
+.sheet .host-row{display:flex;gap:10px;align-items:center;margin-top:10px}
+.sheet .host-avatar{width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,#ffd59a,#ff9aa2);display:flex;align-items:center;justify-content:center;font-weight:800}
+.sheet .host-bio{font-size:13px;color:var(--muted)}
 
-/* Map container inside modal */
-.map-small{width:100%; height:220px; border-radius:12px; margin:8px 0;}
+/* Chat modal */
+.chat-modal{position:fixed;left:10px;right:10px;bottom:12px;background:var(--card);border-radius:16px;padding:0;transform:translateY(110%);transition:transform .28s;max-height:86vh;display:flex;flex-direction:column;z-index:90}
+.chat-modal.show{transform:translateY(0)}
+.chat-header{display:flex;align-items:center;padding:12px;border-bottom:1px solid rgba(86,98,112,0.06)}
+.chat-title{font-weight:800;margin-left:8px}
+.chat-body{padding:12px;overflow:auto;flex:1}
+.msg{display:inline-block;padding:8px 10px;border-radius:10px;margin:6px 0;max-width:78%}
+.msg.me{background:linear-gradient(90deg,var(--primary),#60a5fa);color:#fff;margin-left:auto}
+.msg.them{background:rgba(86,98,112,0.06);color:var(--text)}
+.chat-input{display:flex;padding:10px;border-top:1px solid rgba(86,98,112,0.06)}
+.chat-input input{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(86,98,112,0.06);margin-right:8px}
+.chat-input button{padding:10px 12px;border-radius:10px;border:0;background:var(--primary);color:#fff}
 
-/* Auth modal default hidden style */
-#authModal{ left:50%; top:50%; bottom:auto; transform:translate(-50%,-50%) scale(0.8); opacity:0; pointer-events:none; position:fixed; z-index:70; max-width:640px; transition:transform .3s cubic-bezier(.22,.9,.3,1), opacity .3s; }
-
-/* Overlay */
-#modalOverlay{ position:fixed; inset:0; background:rgba(7,18,41,0.45); z-index:60; opacity:0; transition:opacity .2s; pointer-events:none; }
-
-/* Account & About modals */
-#accountModal, #aboutModal{ position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(0.95); opacity:0; pointer-events:none; z-index:75; max-width:760px; width:92%; padding:18px; border-radius:14px; box-shadow:0 20px 60px rgba(15,23,42,0.12); background:var(--card); transition:opacity .25s, transform .25s; }
-
-/* Visible state */
-.modal.visible, .sheet.visible, #accountModal.visible, #aboutModal.visible{ opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto; }
-
-/* Toast */
-.toast{position:fixed; left:50%; transform:translateX(-50%); bottom:98px; background:rgba(7,18,41,0.92); color:#fff; padding:10px 14px; border-radius:12px; z-index:80; opacity:0; transition:opacity .3s}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:120px;background:rgba(7,18,41,0.92);color:#fff;padding:10px 14px;border-radius:12px;z-index:95;opacity:0;transition:opacity .3s}
 .toast.show{opacity:1}
 
-/* Profile drawer responsive */
-@media(min-width:980px){
-  .layout{display:grid; grid-template-columns:420px 1fr; gap:20px; align-items:start}
-  .feed{padding:0}
-  .micro-map{display:none}
-  .bottom-nav{display:none}
-  .topbar{padding:8px 0}
-  .app{padding:20px}
-  #rightPanel{display:block}
-}
+/* small-screen tuning */
+@media (max-width:420px){ .avatar{width:46px;height:46px} .micro{width:64px;height:44px} .fab{width:56px;height:56px;font-size:22px} .icon{width:44px;height:44px} }
+@media(min-width:980px){ .app{padding:22px} .bottom{display:none} }
 </style>
 </head>
 <body>
-<div class="app" id="appRoot">
-  <div class="topbar">
-    <div class="logo"><span class="dot"></span>HyperLocal</div>
-    <div class="search" role="search" aria-label="search">
-      <input id="searchInput" placeholder="Find hangouts, clubs or people — try 'music' or 'run'..." />
+<div class="app">
+  <header class="header">
+    <div class="brand"><div class="logo-dot" aria-hidden></div><div class="title">HyperLocal</div></div>
+    <div class="searchWrap">
+      <div class="search" role="search"><input id="search" placeholder="Search events, people or tags" aria-label="Search"/></div>
+      <button id="me" class="icon-btn" aria-label="Profile">🙂</button>
     </div>
-    <button id="menuBtn" class="icon-btn" aria-label="menu">≡</button>
-    <button id="loginBtn" class="icon-btn" aria-label="login">🔐</button>
-    <button id="profileBtn" class="icon-btn" aria-label="profile">🙂</button>
+  </header>
+
+  <div class="filters" role="tablist" aria-label="Quick filters">
+    <button class="filter active" data-filter="nearby">Nearby</button>
+    <button class="filter" data-filter="today">Today</button>
+    <button class="filter" data-filter="music">Music</button>
+    <button class="filter" data-filter="sports">Sports</button>
   </div>
 
-  <div class="chips" id="chips" aria-hidden="false">
-    <button data-filter="now">Now</button>
-    <button data-filter="nearby">Nearby</button>
-    <button data-filter="today">Today</button>
-    <button data-filter="music">Music</button>
-    <button data-filter="sports">Sports</button>
-    <button data-filter="tech">Tech</button>
-  </div>
+  <main class="feed" id="feed" aria-live="polite"></main>
 
-  <div class="layout" id="layout">
-    <main id="mainFeed" class="feed" aria-live="polite" aria-label="Event feed">
-      <!-- Event cards injected here -->
-    </main>
-
-    <aside id="rightPanel" aria-label="Details panel" style="display:none">
-      <div style="background:var(--card); padding:12px; border-radius:12px; box-shadow:var(--shadow); margin-bottom:12px">
-        <h3 style="margin:0 0 8px 0">Details</h3>
-        <div id="rightDetail">Select an event to see details here.</div>
-      </div>
-      <div style="background:var(--card); padding:12px; border-radius:12px; box-shadow:var(--shadow);">
-        <h3 style="margin:0 0 8px 0">Map</h3>
-        <div id="rightMap" style="height:420px; border-radius:12px; overflow:hidden"></div>
-      </div>
-    </aside>
-  </div>
-
-  <div class="bottom-nav" aria-hidden="false">
-    <button class="icon-btn" title="Home" id="homeBtn">🏠</button>
-    <button class="icon-btn" title="Search" id="searchBtn">🔍</button>
-    <button id="fab" class="fab" aria-label="create">＋</button>
-    <button class="icon-btn" title="Inbox" id="inboxBtn">💬</button>
-    <button class="icon-btn" title="Profile" id="profileBtnBottom">👤</button>
-  </div>
+  <nav class="bottom" aria-label="Main">
+    <button id="home" class="icon" aria-label="Home">🏠</button>
+    <button id="searchBtn" class="icon" aria-label="Search">🔍</button>
+    <button id="create" class="fab" aria-label="Create">＋</button>
+    <div style="position:relative">
+      <button id="chatBtn" class="icon" aria-label="Chat">💬</button>
+      <span id="chatBadge" class="badge" style="display:none">0</span>
+    </div>
+    <button id="profileBottom" class="icon" aria-label="Profile">👤</button>
+  </nav>
 </div>
 
-<!-- Overlay for modals -->
-<div id="modalOverlay"></div>
+<!-- Auth modal (improved) -->
+<div id="authModal" class="modal" aria-hidden="true">
+  <button class="close" id="closeAuth">✕</button>
+  <div class="auth-card" role="dialog" aria-modal="true">
+    <div class="auth-header"><div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#ffb37b);display:flex;align-items:center;justify-content:center;font-weight:800;color:#071229">H</div><div><div class="auth-title">Welcome back</div><div class="auth-sub">Sign in to join nearby meetups</div></div></div>
 
-<!-- Auth modal (login/register) -->
-<div id="authModal" class="modal" role="dialog" aria-hidden="true">
-  <button class="close-btn" id="closeAuth" aria-label="close">✕</button>
-  <div class="auth-modal" id="authContent">
-    <h3 id="authTitle">Log in</h3>
-    <div id="loginForm">
-      <div class="auth-row"><input id="loginEmail" class="input" placeholder="Email" type="email" /></div>
-      <div class="auth-row"><input id="loginPass" class="input" placeholder="Password" type="password" /></div>
-      <div style="display:flex; gap:8px; justify-content:space-between">
-        <button id="showRegister" class="btn-cta" style="flex:1">Create account</button>
-        <button id="doLogin" class="btn-cta" style="flex:1">Log in</button>
+    <div id="authForms">
+      <div id="loginForm">
+        <input id="loginEmail" class="input" placeholder="Email" type="email" />
+        <input id="loginPass" class="input" placeholder="Password" type="password" />
+        <div style="display:flex;gap:8px">
+          <button id="doLogin" class="btn primary" style="flex:1">Sign in</button>
+          <button id="toRegister" class="btn ghost" style="flex:1">Create</button>
+        </div>
+      </div>
+
+      <div id="registerForm" style="display:none">
+        <input id="regName" class="input" placeholder="Your name" />
+        <input id="regEmail" class="input" placeholder="Email" type="email" />
+        <input id="regPass" class="input" placeholder="Create a password" type="password" />
+        <div style="display:flex;gap:8px">
+          <button id="doRegister" class="btn primary" style="flex:1">Create account</button>
+          <button id="toLogin" class="btn ghost" style="flex:1">Back</button>
+        </div>
       </div>
     </div>
 
-    <div id="registerForm" style="display:none; margin-top:12px">
-      <div class="auth-row"><input id="regName" class="input" placeholder="Full name" /></div>
-      <div class="auth-row"><input id="regEmail" class="input" placeholder="Email" type="email" /></div>
-      <div class="auth-row"><input id="regPass" class="input" placeholder="Password (min 6 chars)" type="password" /></div>
-      <div style="display:flex; gap:8px; justify-content:space-between; margin-top:8px">
-        <button id="showLogin" class="btn-cta" style="flex:1">Back</button>
-        <button id="doRegister" class="btn-cta" style="flex:1">Sign up</button>
+    <div style="margin-top:8px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Or continue with</div>
+      <div class="socials">
+        <button class="social" aria-label="Continue with Google">Google</button>
+        <button class="social" aria-label="Continue with Apple">Apple</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Event modal (mobile) -->
-<div id="eventModal" class="modal" role="dialog" aria-hidden="true">
-  <button class="close-btn" id="closeModal" aria-label="close">✕</button>
-  <div id="eventContent"></div>
+<!-- Event details sheet -->
+<div id="sheet" class="sheet" aria-hidden="true">
+  <button class="sheet-close" id="closeSheet">✕</button>
+  <!-- content injected here -->
 </div>
 
-<!-- Create sheet -->
-<div id="createSheet" class="sheet" role="dialog" aria-hidden="true" style="left:auto; right:16px; width:360px; transform:translateY(110%);">
-  <button class="close-btn" id="closeCreate" aria-label="close">✕</button>
-  <h3 style="margin-top:0">Quick create</h3>
-  <div id="createStep1" class="create-step">
-    <div class="form-row">
-      <label>What?</label>
-      <input id="evTitle" class="input" placeholder="e.g., Park jam session" />
-    </div>
-    <div class="row">
-      <input id="evTime" class="input" type="datetime-local" />
-    </div>
-    <div style="display:flex; justify-content:flex-end; margin-top:8px">
-      <button id="toStep2" class="btn-cta">Next</button>
-    </div>
+<!-- Chat modal -->
+<div id="chat" class="chat-modal" aria-hidden="true">
+  <div class="chat-header"><button id="closeChat" class="icon-btn" aria-label="close">✕</button><div class="chat-title">Groups</div></div>
+  <div class="chat-body" id="chatBody">
+    <!-- group list or messages rendered here -->
   </div>
-  <div id="createStep2" class="create-step" style="display:none">
-    <div class="form-row">
-      <label>Where? (optional)</label>
-      <input id="evPlace" class="input" placeholder="Park north entrance" />
-    </div>
-    <div class="form-row">
-      <label>Visibility</label>
-      <select id="evVis" class="select">
-        <option value="public">Open to all</option>
-        <option value="invite">Invite only</option>
-      </select>
-    </div>
-    <div style="display:flex; justify-content:space-between; gap:8px">
-      <button id="backTo1" class="btn-cta" style="flex:1">Back</button>
-      <button id="publishBtn" class="btn-cta" style="flex:1">Publish</button>
-    </div>
+  <div class="chat-input">
+    <input id="chatInput" placeholder="Message #general" />
+    <button id="sendMsg">Send</button>
   </div>
-</div>
-
-<!-- Account modal -->
-<div id="accountModal" role="dialog" aria-hidden="true">
-  <button class="close-btn" id="closeAccount">✕</button>
-  <h3>Account</h3>
-  <div id="accountContent" style="margin-top:12px; color:var(--muted)"></div>
-</div>
-
-<!-- About modal -->
-<div id="aboutModal" role="dialog" aria-hidden="true">
-  <button class="close-btn" id="closeAbout">✕</button>
-  <h3>About HyperLocal</h3>
-  <p style="color:var(--muted)">This is a prototype. The map, auth and events are mock implementations for demo purposes.</p>
-</div>
-
-<!-- Profile drawer -->
-<div id="profileDrawer" class="sheet" role="dialog" aria-hidden="true" style="left:auto; right:16px; bottom:16px; width:320px; transform:translateY(110%);">
-  <button class="close-btn" id="closeProfile" aria-label="close">✕</button>
-  <div id="profileContent" style="padding:8px"></div>
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
-// DOM ready
-window.addEventListener('DOMContentLoaded', () => {
-  let mockEvents = [
-    {id:'e1', title:'Sunrise Run', tagline:'8km easy pace — all welcome', time:'2025-11-20T06:00:00Z', distance_m:850, category:'Fitness', rsvp:6, host:{name:'Sam',avatar:''}, lat:12.935, lng:77.624},
-    {id:'e2', title:'Acoustic Jam', tagline:'Bring a guitar and a smile', time:'2025-11-20T19:00:00Z', distance_m:1200, category:'Music', rsvp:3, host:{name:'Maya',avatar:''}, lat:12.934, lng:77.629},
-    {id:'e3', title:'Weekend Python', tagline:'Casual coding — beginners welcome', time:'2025-11-21T16:00:00Z', distance_m:2200, category:'Tech', rsvp:10, host:{name:'Rohit',avatar:''}, lat:12.94, lng:77.62},
-    {id:'e4', title:'Park Soccer', tagline:'Pickup match — show up and play', time:'2025-11-19T17:30:00Z', distance_m:600, category:'Sports', rsvp:12, host:{name:'Asha',avatar:''}, lat:12.931, lng:77.63}
-  ];
+/* Responsive + chat integration */
+const SAMPLE = [
+  {id:'e1',title:'Sunrise Run',desc:'8 km, easy pace',time:'2025-11-20T06:00:00Z',dist:850,cat:'Fitness',host:{name:'Sam',bio:'Runner •Coffee lover',contact:'@sam_run'},lat:12.935,lng:77.624},
+  {id:'e2',title:'Acoustic Jam',desc:'Bring a guitar',time:'2025-11-20T19:00:00Z',dist:1200,cat:'Music',host:{name:'Maya',bio:'Guitarist • Host',contact:'@maya_music'},lat:12.9343,lng:77.6292},
+  {id:'e3',title:'Python Meetup',desc:'Beginners welcome',time:'2025-11-21T16:00:00Z',dist:2200,cat:'Tech',host:{name:'Rohit',bio:'Backend dev • Mentor',contact:'@rohit_codes'},lat:12.94,lng:77.62},
+  {id:'e4',title:'Park Soccer',desc:'Pickup match',time:'2025-11-19T17:30:00Z',dist:600,cat:'Sports',host:{name:'Asha',bio:'Coach • Friendly',contact:'@asha_play'},lat:12.9312,lng:77.63}
+];
 
-  const feedEl = document.getElementById('mainFeed');
-  const toast = document.getElementById('toast');
-  const authModal = document.getElementById('authModal');
-  const modalOverlay = document.getElementById('modalOverlay');
-  const accountModal = document.getElementById('accountModal');
-  const aboutModal = document.getElementById('aboutModal');
-  const profileDrawerEl = document.getElementById('profileDrawer');
-  const rightPanel = document.getElementById('rightPanel');
-  let mapRight = null, detailMap = null, rightMarkers = [];
+const feed = document.getElementById('feed');
+const toast = document.getElementById('toast');
+let currentUser = JSON.parse(localStorage.getItem('hl_user') || 'null');
+let detailMap = null; // Leaflet map instance
 
-  function humanTime(iso){ const d=new Date(iso); const opts={hour:'numeric',minute:'2-digit',day:'numeric',month:'short'}; return d.toLocaleString(undefined,opts); }
-  function metersToString(m){ if(m<1000) return m+' m'; return (m/1000).toFixed(1)+' km'; }
-  function createEl(tag, cls, html){ const e=document.createElement(tag); if(cls) e.className=cls; if(html!==undefined) e.innerHTML=html; return e; }
+function q(sel){return document.querySelector(sel)}
+function timeStr(iso){const d=new Date(iso);return d.toLocaleString(undefined,{hour:'numeric',minute:'2-digit',day:'numeric',month:'short'})}
+function distStr(m){return m<1000?m+' m':(m/1000).toFixed(1)+' km'}
 
-  function smallMapSVG(ev){ const cx = 20 + (ev.distance_m % 60); const cy = 20 + ((Math.floor(ev.distance_m/50)) % 30); return `<svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="100" height="70" rx="8" fill="#F0FAFF"/><path d="M8 50 Q30 30 52 50 T96 50" stroke="#d9f0ff" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="6" fill="${getCategoryColor(ev.category)}"/></svg>`; }
-  function getCategoryColor(cat){ switch((cat||'').toLowerCase()){ case 'music': return '#8B5CF6'; case 'fitness': return '#10B981'; case 'sports': return '#FB7185'; case 'tech': return '#3B82F6'; default: return '#3B82F6'; } }
+function showToast(msg, t=1700){toast.textContent = msg; toast.classList.add('show'); clearTimeout(window._t); window._t = setTimeout(()=> toast.classList.remove('show'), t)}
 
-  function renderFeed(list){ feedEl.innerHTML=''; list.forEach(ev=>{ const card=createEl('article','card'); card.dataset.id=ev.id; card.tabIndex=0; card.innerHTML=`<div class="avatar">${ev.host.name[0]||'?'}</div><div class="content"><h3 class="title">${ev.title}</h3><p class="tagline">${ev.tagline}</p><div class="meta">${humanTime(ev.time)} · ${metersToString(ev.distance_m)}</div></div><div class="actions"><button class="btn-cta">Join</button><button class="more" aria-label="more">›</button></div><div class="micro-map" title="Show location preview" role="button" tabindex="0" aria-label="map preview"></div>`; feedEl.appendChild(card); const joinBtn=card.querySelector('.btn-cta'); joinBtn.addEventListener('click', ()=>joinEvent(ev.id, joinBtn, ev)); card.querySelector('.more').addEventListener('click', ()=>openDetail(ev.id)); card.querySelector('.content').addEventListener('click', ()=>openDetail(ev.id)); card.querySelector('.micro-map').addEventListener('click',(e)=>{e.stopPropagation(); openMiniMap(ev)}); card.querySelector('.micro-map').addEventListener('keypress',(e)=>{ if(e.key==='Enter') openMiniMap(ev)}); card.querySelector('.micro-map').innerHTML=smallMapSVG(ev); }); updateRightPanel(list); }
+// render optimized
+function render(list){ feed.innerHTML=''; const frag = document.createDocumentFragment();
+  for(const ev of list){
+    const card = document.createElement('div'); card.className='card';
+    const av = document.createElement('div'); av.className='avatar'; av.textContent = ev.host.name[0];
+    const info = document.createElement('div'); info.className='info';
+    const name = document.createElement('div'); name.className='name'; name.textContent = ev.title;
+    const desc = document.createElement('div'); desc.className='desc'; desc.textContent = ev.desc;
+    const meta = document.createElement('div'); meta.className='meta'; meta.textContent = `${timeStr(ev.time)} · ${distStr(ev.dist)}`;
+    info.appendChild(name); info.appendChild(desc); info.appendChild(meta);
+    const micro = document.createElement('div'); micro.className='micro'; micro.innerHTML = `<svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="70" rx="8" fill="transparent"/></svg>`;
+    const actions = document.createElement('div'); actions.className='action-row';
+    const btn = document.createElement('button'); btn.className='btn primary'; btn.textContent='Join';
+    btn.addEventListener('click', ()=>{ if(!currentUser){ openAuth(); showToast('Sign in to join'); return;} showToast("You're in — enjoy!"); });
+    const more = document.createElement('button'); more.className='btn ghost'; more.textContent='Details'; more.addEventListener('click', ()=> openDetails(ev));
+    actions.appendChild(btn); actions.appendChild(more);
+    card.appendChild(av); card.appendChild(info); card.appendChild(micro); card.appendChild(actions);
+    frag.appendChild(card);
+  }
+  feed.appendChild(frag);
+}
 
-  function updateRightPanel(list){ const mini=document.getElementById('rightDetail'); if(!mini) return; mini.innerHTML='<div style="color:var(--muted)">Select an event to view details here.</div>'; if(window.innerWidth>=980) rightPanel.style.display='block'; if(window.innerWidth>=980 && !mapRight){ setTimeout(()=>initRightMap(list),0); } else if(mapRight){ refreshRightMarkers(list); } }
-  function initRightMap(list){ try{ mapRight = L.map('rightMap',{zoomControl:true}).setView([12.935,77.624],14); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(mapRight); list.forEach(ev=>{ const m=L.marker([ev.lat,ev.lng],{title:ev.title}).addTo(mapRight).bindPopup(`<strong>${ev.title}</strong><br>${humanTime(ev.time)}`); m.evId=ev.id; m.on('click',()=>openDetail(ev.id)); rightMarkers.push(m); }); }catch(e){ console.warn('Leaflet init failed',e); } }
-  function refreshRightMarkers(list){ if(!mapRight) return; rightMarkers.forEach(m=>mapRight.removeLayer(m)); rightMarkers=[]; list.forEach(ev=>{ const m=L.marker([ev.lat,ev.lng],{title:ev.title}).addTo(mapRight).bindPopup(`<strong>${ev.title}</strong><br>${humanTime(ev.time)}`); m.on('click',()=>openDetail(ev.id)); rightMarkers.push(m); }); }
+// details with map + host
+function openDetails(ev){
+  const s = document.getElementById('sheet'); s.innerHTML='';
+  const title = document.createElement('div'); title.innerHTML = `<strong style="font-size:16px">${ev.title}</strong>`;
+  const meta = document.createElement('div'); meta.style.color='var(--muted)'; meta.style.marginTop='6px'; meta.textContent = `${timeStr(ev.time)} · ${distStr(ev.dist)}`;
+  const p = document.createElement('p'); p.style.marginTop='8px'; p.style.color='var(--muted)'; p.textContent = ev.desc;
+  const mapWrap = document.createElement('div'); mapWrap.className='map-small'; mapWrap.id='detailMap';
+  const hostRow = document.createElement('div'); hostRow.className='host-row';
+  const hat = document.createElement('div'); hat.className='host-avatar'; hat.textContent = ev.host.name[0];
+  const hb = document.createElement('div'); const hname = document.createElement('div'); hname.style.fontWeight='800'; hname.textContent = ev.host.name; const hbio = document.createElement('div'); hbio.className='host-bio'; hbio.textContent = ev.host.bio; const hcontact = document.createElement('div'); hcontact.style.fontSize='13px'; hcontact.style.marginTop='6px'; hcontact.style.color='var(--muted)'; hcontact.textContent = `Contact: ${ev.host.contact}`;
+  hb.appendChild(hname); hb.appendChild(hbio); hb.appendChild(hcontact); hostRow.appendChild(hat); hostRow.appendChild(hb);
+  const joinWrap = document.createElement('div'); joinWrap.style.marginTop='12px'; const join = document.createElement('button'); join.className='btn primary'; join.style.width='100%'; join.textContent='Join'; join.addEventListener('click', ()=>{ if(!currentUser){ openAuth(); showToast('Sign in to join'); return;} showToast('You are in — have fun!'); s.classList.remove('show'); destroyDetailMap(); });
+  joinWrap.appendChild(join);
+  s.appendChild(title); s.appendChild(meta); s.appendChild(p); s.appendChild(mapWrap); s.appendChild(hostRow); s.appendChild(joinWrap);
+  s.classList.add('show'); s.setAttribute('aria-hidden','false');
+  setTimeout(()=> initDetailMap(ev),120);
+}
 
-  function openMiniMap(ev){ openDetail(ev.id,{openMap:true}); }
+function initDetailMap(ev){
+  try{ destroyDetailMap(); const mapEl = document.getElementById('detailMap'); if(!mapEl) return; detailMap = L.map('detailMap',{zoomControl:false,attributionControl:false}).setView([ev.lat, ev.lng],15); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(detailMap); const marker = L.marker([ev.lat, ev.lng]).addTo(detailMap).bindPopup(`<strong>${ev.title}</strong><br>${ev.host.name}`); marker.openPopup(); setTimeout(()=> detailMap.zoomControl ? detailMap.zoomControl.addTo(detailMap) : null,250);}catch(e){console.warn('map',e)}
+}
+function destroyDetailMap(){ try{ if(detailMap){ detailMap.remove(); detailMap=null; } const existing = document.getElementById('detailMap'); if(existing) existing.innerHTML=''; }catch(e){}
+}
 
-  function joinEvent(id, btn, ev){ if(btn.disabled) return; if(!getCurrentUser()){ showToast('Please sign in to join — quick & secure 🔐'); openAuth('login'); return; } btn.disabled=true; btn.innerHTML='Joining...'; ev.rsvp=(ev.rsvp||0)+1; showToast("You're in — "+ev.rsvp+" going 🎉"); setTimeout(()=>{ btn.innerHTML='Going ✓'; btn.style.background='linear-gradient(90deg,var(--success),#34d399)'; btn.disabled=true; renderFeed(mockEvents); },700); }
+q('#closeSheet').addEventListener('click', ()=>{ const s = q('#sheet'); s.classList.remove('show'); s.setAttribute('aria-hidden','true'); destroyDetailMap(); });
 
-  function openDetail(id,opts={}){ const ev=mockEvents.find(x=>x.id===id); if(!ev) return; if(window.innerWidth>=980){ const rd=document.getElementById('rightDetail'); rd.innerHTML=`<strong style="font-size:18px">${ev.title}</strong><div style="color:var(--muted); margin-top:6px">${humanTime(ev.time)} · ${metersToString(ev.distance_m)}</div><div style="margin-top:8px; display:flex; gap:8px; align-items:center"><div style="width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,#ffd59a,#ff9aa2);display:flex;align-items:center;justify-content:center;color:#071229;font-weight:800">${ev.host.name[0]}</div><div><strong>${ev.host.name}</strong><div style="font-size:13px;color:var(--muted)">Host</div></div></div><p style="color:var(--muted); margin-top:12px">${ev.tagline}</p><div style="display:flex; gap:8px; margin-top:12px"><button id="detailJoinRight" class="btn-cta">Join</button><button id="shareBtn" class="btn-cta">Share</button><button id="aboutBtn" class="btn-ghost">About</button></div>`; document.getElementById('detailJoinRight').addEventListener('click',()=>joinEvent(id,document.getElementById('detailJoinRight'),ev)); document.getElementById('shareBtn').addEventListener('click',()=>showToast('Share (mock) — not implemented.')); document.getElementById('aboutBtn').addEventListener('click',()=>openAbout()); if(mapRight){ mapRight.setView([ev.lat,ev.lng],15); } return; } const eventModal=document.getElementById('eventModal'); const eventContent=document.getElementById('eventContent'); eventContent.innerHTML=`<h2 class="title">${ev.title} <span style="font-size:14px; color:var(--muted); font-weight:600"> · ${ev.category}</span></h2><div class="meta">${humanTime(ev.time)} · ${metersToString(ev.distance_m)}</div><div style="margin:8px 0; display:flex; gap:8px; align-items:center"><div class="small-avatar">${ev.host.name[0]}</div><div><strong>${ev.host.name}</strong><div style="font-size:13px;color:var(--muted)">Host</div></div></div><p style="color:var(--muted); margin-top:8px">${ev.tagline}</p><div id="detailMapContainer" style="margin-top:12px"><div id="detailMap" class="map-small" aria-hidden="true"></div></div><div style="margin-top:12px"><button id="detailJoin" class="btn-cta" style="width:100%">Join</button><div style="display:flex; gap:8px; margin-top:8px"><button id="addCal" class="btn-cta" style="flex:1">Add to calendar</button><button id="shareMobile" class="btn-ghost" style="flex:1">Share</button></div></div>`; document.getElementById('detailJoin').addEventListener('click',()=>joinEvent(id,document.getElementById('detailJoin'),ev)); document.getElementById('addCal').addEventListener('click',()=>showToast('Add to calendar (mock).')); document.getElementById('shareMobile').addEventListener('click',()=>showToast('Share (mock).')); eventModal.classList.add('show'); eventModal.setAttribute('aria-hidden','false'); setTimeout(()=>initDetailMap(ev),420); }
-  function initDetailMap(ev){ try{ if(detailMap){ detailMap.remove(); detailMap=null; } detailMap=L.map('detailMap',{zoomControl:true,attributionControl:false}).setView([ev.lat,ev.lng],15); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(detailMap); L.marker([ev.lat,ev.lng]).addTo(detailMap).bindPopup(`<strong>${ev.title}</strong>`).openPopup(); }catch(e){ console.warn('detail map init failed',e); } }
-  document.getElementById('closeModal').addEventListener('click',()=>{ document.getElementById('eventModal').classList.remove('show'); document.getElementById('eventModal').setAttribute('aria-hidden','true'); if(detailMap){ detailMap.remove(); detailMap=null; } });
+// Auth
+function openAuth(){ const m = q('#authModal'); m.classList.add('show'); m.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
+function closeAuth(){ const m = q('#authModal'); m.classList.remove('show'); m.setAttribute('aria-hidden','true'); document.body.style.overflow='auto'; }
+q('#me').addEventListener('click', ()=>{ if(currentUser) showToast('Signed in as '+currentUser.name); else openAuth(); });
+q('#profileBottom').addEventListener('click', ()=>{ if(currentUser) showToast('Signed in as '+currentUser.name); else openAuth(); });
+q('#create').addEventListener('click', ()=>{ if(!currentUser){ openAuth(); showToast('Sign in to create'); return; } showToast('Create (coming soon)') });
+q('#closeAuth').addEventListener('click', closeAuth);
+q('#toRegister').addEventListener('click', ()=>{ q('#loginForm').style.display='none'; q('#registerForm').style.display='block'; });
+q('#toLogin').addEventListener('click', ()=>{ q('#registerForm').style.display='none'; q('#loginForm').style.display='block'; });
+q('#doRegister').addEventListener('click', ()=>{ const n=q('#regName').value.trim(); const e=q('#regEmail').value.trim(); if(!n||!e){ showToast('Enter your name and email'); return;} currentUser = {name:n,email:e}; localStorage.setItem('hl_user', JSON.stringify(currentUser)); closeAuth(); updateUserUI(); showToast('Welcome '+n); });
+q('#doLogin').addEventListener('click', ()=>{ const e=q('#loginEmail').value.trim(); if(!e){ showToast('Enter your email'); return;} currentUser = {name:e.split('@')[0],email:e}; localStorage.setItem('hl_user', JSON.stringify(currentUser)); closeAuth(); updateUserUI(); showToast('Signed in'); });
+function updateUserUI(){ if(currentUser) q('#me').textContent = currentUser.name[0].toUpperCase(); else q('#me').textContent='🙂'; }
+updateUserUI();
 
-  // Create sheet handlers are already wired below, ensure element exists (we added it)
-  document.getElementById('fab').addEventListener('click',()=>{ document.getElementById('createSheet').classList.add('visible'); document.getElementById('createSheet').setAttribute('aria-hidden','false'); });
-  document.getElementById('closeCreate').addEventListener('click',()=>{ document.getElementById('createSheet').classList.remove('visible'); document.getElementById('createSheet').setAttribute('aria-hidden','true'); });
-  document.getElementById('toStep2').addEventListener('click',()=>{ const t=document.getElementById('evTitle').value.trim(); const time=document.getElementById('evTime').value; if(!t||!time){ alert('Please add a title and time'); return;} document.getElementById('createStep1').style.display='none'; document.getElementById('createStep2').style.display='block'; });
-  document.getElementById('backTo1').addEventListener('click',()=>{ document.getElementById('createStep1').style.display='block'; document.getElementById('createStep2').style.display='none'; });
-  document.getElementById('publishBtn').addEventListener('click',()=>{ const title=document.getElementById('evTitle').value.trim(); const time=document.getElementById('evTime').value; const place=document.getElementById('evPlace').value||'Nearby'; if(!getCurrentUser()){ showToast('Please sign in to publish events.'); openAuth('login'); return; } const id='e'+(Date.now()%100000); const newEv={id,title,tagline:place,time:new Date(time).toISOString(),distance_m:Math.floor(Math.random()*1500)+200,category:'Community',rsvp:1,host:{name:getCurrentUser().name,avatar:''},lat:12.935+Math.random()*0.01,lng:77.624+Math.random()*0.01}; mockEvents.unshift(newEv); renderFeed(mockEvents); document.getElementById('createSheet').classList.remove('visible'); document.getElementById('createSheet').setAttribute('aria-hidden','true'); showToast('Event published — good luck! 🎉'); });
+// Filters
+document.querySelectorAll('.filter').forEach(btn=> btn.addEventListener('click', ()=>{ document.querySelectorAll('.filter').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); const f = btn.dataset.filter; if(f==='nearby') render([...SAMPLE].sort((a,b)=>a.dist-b.dist)); else if(f==='today') render(SAMPLE.filter(x=> new Date(x.time).toDateString() === new Date().toDateString())); else render(SAMPLE.filter(x=> x.cat.toLowerCase() === f)); }));
 
-  // Toast
-  let toastTimer=null;
-  function showToast(msg,t=2200){ toast.textContent=msg; toast.classList.add('show'); if(toastTimer) clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ toast.classList.remove('show'); },t); }
+document.addEventListener('keydown',(e)=>{ if(e.key==='Escape'){ closeAuth(); const s = q('#sheet'); if(s){ s.classList.remove('show'); destroyDetailMap(); } const c = q('#chat'); if(c){ c.classList.remove('show'); } }});
 
-  // Search & chips
-  document.getElementById('searchInput').addEventListener('input',(e)=>{ const q=e.target.value.trim().toLowerCase(); if(!q){ renderFeed(mockEvents); return; } const filtered=mockEvents.filter(ev=>ev.title.toLowerCase().includes(q)||ev.tagline.toLowerCase().includes(q)||ev.category.toLowerCase().includes(q)||ev.host.name.toLowerCase().includes(q)); renderFeed(filtered); });
-  document.querySelectorAll('.chips button').forEach(btn=>{ btn.addEventListener('click',()=>{ const f=btn.dataset.filter; if(f==='nearby'){ renderFeed(mockEvents.slice().sort((a,b)=>a.distance_m-b.distance_m)); } else if(f==='now'){ const now=Date.now(); renderFeed(mockEvents.slice().sort((a,b)=>Math.abs(new Date(a.time)-now)-Math.abs(new Date(b.time)-now))); } else { renderFeed(mockEvents.filter(e=>e.category.toLowerCase()===f)); } }); });
+// Theme sync
+(function setupThemeSync(){ const metaTheme = document.getElementById('meta-theme'); const applyTheme = (isDark) => { if(isDark){ document.documentElement.style.setProperty('--bg','#071226'); document.documentElement.style.setProperty('--card','#0b1220'); document.documentElement.style.setProperty('--primary','#4f9cff'); document.documentElement.style.setProperty('--accent','#ff8a66'); document.documentElement.style.setProperty('--muted','#9aa6b2'); document.documentElement.style.setProperty('--glass','rgba(8,12,18,0.6)'); document.documentElement.style.setProperty('--shadow','0 8px 30px rgba(0,0,0,0.6)'); document.documentElement.style.setProperty('--text','#E6F0FF'); if(metaTheme) metaTheme.setAttribute('content','#071226'); document.documentElement.setAttribute('data-theme','dark'); } else { document.documentElement.style.setProperty('--bg','#F7FBFF'); document.documentElement.style.setProperty('--card','#FFFFFF'); document.documentElement.style.setProperty('--primary','#2563EB'); document.documentElement.style.setProperty('--accent','#FF7A59'); document.documentElement.style.setProperty('--muted','#566270'); document.documentElement.style.setProperty('--glass','rgba(255,255,255,0.72)'); document.documentElement.style.setProperty('--shadow','0 8px 30px rgba(15,23,42,0.08)'); document.documentElement.style.setProperty('--text','#071229'); if(metaTheme) metaTheme.setAttribute('content','#ffffff'); document.documentElement.setAttribute('data-theme','light'); } }; const mq = window.matchMedia('(prefers-color-scheme: dark)'); applyTheme(mq.matches); try{ mq.addEventListener('change',(e)=> applyTheme(e.matches)); }catch(err){ mq.addListener((e)=> applyTheme(e.matches)); }})();
 
-  // Keyboard accessibility
-  feedEl.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ const card=document.activeElement.closest('.card'); if(card) openDetail(card.dataset.id); } });
+// CHAT — simple group chat mock (localStorage)
+const chatBtn = q('#chatBtn'); const chatModal = q('#chat'); const chatBody = q('#chatBody'); const chatInput = q('#chatInput'); const sendMsg = q('#sendMsg'); const chatBadge = q('#chatBadge');
+const GROUPS = ['general','music','sports']; // simple groups
+let activeGroup = 'general';
+function loadMessages(group){ return JSON.parse(localStorage.getItem('chat_'+group) || '[]'); }
+function saveMessage(group,msg){ const arr = loadMessages(group); arr.push(msg); localStorage.setItem('chat_'+group, JSON.stringify(arr)); updateChatBadge(); }
+function renderChatList(){ chatBody.innerHTML=''; const groupsWrap = document.createElement('div'); groupsWrap.style.display='flex'; groupsWrap.style.gap='8px'; groupsWrap.style.padding='8px'; GROUPS.forEach(g=>{ const b = document.createElement('button'); b.className='btn ghost'; b.textContent = '#'+g; b.addEventListener('click', ()=> openGroup(g)); groupsWrap.appendChild(b); }); chatBody.appendChild(groupsWrap); // load active group messages
+  const msgs = loadMessages(activeGroup); const msgsWrap = document.createElement('div'); msgsWrap.id='msgsWrap'; msgsWrap.style.marginTop='8px'; msgs.forEach(m=>{ const el = document.createElement('div'); el.className = 'msg '+(m.from==='me'?'me':'them'); el.textContent = m.text; msgsWrap.appendChild(el); }); chatBody.appendChild(msgsWrap); chatBody.scrollTop = chatBody.scrollHeight; }
+function openGroup(g){ activeGroup = g; renderChatList(); chatInput.placeholder = 'Message #'+g; }
+function updateChatBadge(){ // sum unread (very simple) - count messages
+  let total=0; GROUPS.forEach(g=>{ total += loadMessages(g).length; }); if(total>0){ chatBadge.style.display='inline-block'; chatBadge.textContent = total; } else chatBadge.style.display='none'; }
+chatBtn.addEventListener('click', ()=>{ chatModal.classList.add('show'); chatModal.setAttribute('aria-hidden','false'); renderChatList(); updateChatBadge(); });
+q('#closeChat').addEventListener('click', ()=>{ chatModal.classList.remove('show'); chatModal.setAttribute('aria-hidden','true'); });
+sendMsg.addEventListener('click', ()=>{ const text = chatInput.value.trim(); if(!text) return; const msg = {from:'me',text,ts:Date.now()}; saveMessage(activeGroup,msg); chatInput.value=''; renderChatList(); showToast('Sent'); });
+chatInput.addEventListener('keypress',(e)=>{ if(e.key==='Enter'){ sendMsg.click(); } });
 
-  // Auth mock
-  function getCurrentUser(){ return JSON.parse(localStorage.getItem('hyperlocal_user')||'null'); }
-  const loginBtn=document.getElementById('loginBtn');
-  const showRegister=document.getElementById('showRegister');
-  const showLogin=document.getElementById('showLogin');
-  const doLogin=document.getElementById('doLogin');
-  const doRegister=document.getElementById('doRegister');
-  function openAuth(show='login'){ modalOverlay.style.opacity='1'; modalOverlay.style.pointerEvents='auto'; authModal.classList.add('centered','visible'); authModal.setAttribute('aria-hidden','false'); if(show==='login'){ document.getElementById('authTitle').textContent='Log in'; document.getElementById('loginForm').style.display='block'; document.getElementById('registerForm').style.display='none'; } else { document.getElementById('authTitle').textContent='Create account'; document.getElementById('loginForm').style.display='none'; document.getElementById('registerForm').style.display='block'; } }
-  function closeAuthModal(){ modalOverlay.style.opacity='0'; modalOverlay.style.pointerEvents='none'; authModal.classList.remove('centered','visible'); authModal.setAttribute('aria-hidden','true'); }
-  loginBtn.addEventListener('click',()=>openAuth('login')); document.getElementById('closeAuth').addEventListener('click',()=>closeAuthModal()); modalOverlay.addEventListener('click',()=>closeAuthModal()); showRegister.addEventListener('click',()=>openAuth('register')); showLogin.addEventListener('click',()=>openAuth('login'));
+// init
+render(SAMPLE); updateChatBadge();
 
-  doRegister.addEventListener('click',()=>{ const name=document.getElementById('regName').value.trim(); const email=document.getElementById('regEmail').value.trim(); const pass=document.getElementById('regPass').value; if(!name||!email||!pass||pass.length<6){ alert('Name, email and password (min 6 chars) required'); return; } const user={name,email,token:'tok-'+Date.now()}; localStorage.setItem('hyperlocal_user',JSON.stringify(user)); closeAuthModal(); updateAuthUI(); showToast('Welcome, '+name+' 🎉'); });
-  doLogin.addEventListener('click',()=>{ const email=document.getElementById('loginEmail').value.trim(); const pass=document.getElementById('loginPass').value; if(!email||!pass){ alert('Enter email & password'); return; } const user={name:email.split('@')[0],email,token:'tok-'+Date.now()}; localStorage.setItem('hyperlocal_user',JSON.stringify(user)); closeAuthModal(); updateAuthUI(); showToast('Signed in — '+user.name); });
-
-  function updateAuthUI(){ const u=getCurrentUser(); const p=document.getElementById('profileBtn'); const lp=document.getElementById('loginBtn'); if(u){ p.textContent=u.name[0].toUpperCase(); lp.style.display='none'; } else { p.textContent='🙂'; lp.style.display='inline-flex'; } }
-
-  updateAuthUI();
-
-  // Profile drawer
-  const profileBtn=document.getElementById('profileBtn');
-  const profileBtnBottom=document.getElementById('profileBtnBottom');
-  function openProfile(){ const u=getCurrentUser(); const el=document.getElementById('profileContent'); if(!u){ el.innerHTML='<div style="color:var(--muted)">You are not signed in.</div><div style="margin-top:12px"><button id="openAuthFromProfile" class="btn-cta">Sign in</button></div>'; setTimeout(()=>{ const btn=document.getElementById('openAuthFromProfile'); if(btn) btn.addEventListener('click',()=>openAuth('login')); },50); } else { el.innerHTML=`<div style="display:flex; gap:12px; align-items:center"><div style="width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#ffd59a,#ff9aa2);display:flex;align-items:center;justify-content:center;font-weight:800">${u.name[0].toUpperCase()}</div><div><strong>${u.name}</strong><div style="color:var(--muted)">${u.email}</div></div></div><div style="margin-top:12px"><button id="myEventsBtn" class="btn-cta" style="width:100%; margin-bottom:8px">My Events</button><button id="accountBtn" class="btn-ghost" style="width:100%; margin-bottom:8px">Account</button><button id="aboutBtn2" class="btn-ghost" style="width:100%; margin-bottom:8px">About</button><button id="logoutBtn" class="select" style="width:100%">Log out</button></div>`; setTimeout(()=>{ document.getElementById('logoutBtn').addEventListener('click',()=>{ localStorage.removeItem('hyperlocal_user'); updateAuthUI(); closeProfileDrawer(); showToast('Signed out'); }); document.getElementById('myEventsBtn').addEventListener('click',()=>{ filterMyEvents(); closeProfileDrawer(); }); document.getElementById('accountBtn').addEventListener('click',()=>{ openAccount(); closeProfileDrawer(); }); document.getElementById('aboutBtn2').addEventListener('click',()=>{ openAbout(); closeProfileDrawer(); }); },50); } profileDrawerEl.classList.add('visible'); profileDrawerEl.setAttribute('aria-hidden','false'); }
-  function closeProfileDrawer(){ profileDrawerEl.classList.remove('visible'); profileDrawerEl.setAttribute('aria-hidden','true'); }
-  profileBtn.addEventListener('click',()=>openProfile()); profileBtnBottom.addEventListener('click',()=>openProfile()); document.getElementById('closeProfile').addEventListener('click',()=>closeProfileDrawer());
-
-  function filterMyEvents(){ const u=getCurrentUser(); if(!u){ showToast('Sign in to see your events'); openAuth('login'); return; } const mine=mockEvents.filter(e=>e.host && e.host.name===u.name); if(mine.length===0){ showToast('You have no events yet'); return; } renderFeed(mine); }
-
-  // Account & About
-  function openAccount(){ const u=getCurrentUser(); const ac=document.getElementById('accountContent'); if(!u){ ac.innerHTML='<div style="color:var(--muted)">Sign in to see account details.</div>'; } else { ac.innerHTML=`<div><strong>${u.name}</strong><div style="color:var(--muted)">${u.email}</div></div><div style="margin-top:12px"><button id="editProfileBtn" class="btn-cta">Edit profile (mock)</button></div>`; setTimeout(()=>{ document.getElementById('editProfileBtn').addEventListener('click',()=>showToast('Edit profile (mock)')); },50); } accountModal.classList.add('visible'); accountModal.setAttribute('aria-hidden','false'); modalOverlay.style.opacity='1'; modalOverlay.style.pointerEvents='auto'; }
-  document.getElementById('closeAccount').addEventListener('click',()=>{ accountModal.classList.remove('visible'); accountModal.setAttribute('aria-hidden','true'); modalOverlay.style.opacity='0'; modalOverlay.style.pointerEvents='none'; });
-
-  function openAbout(){ aboutModal.classList.add('visible'); aboutModal.setAttribute('aria-hidden','false'); modalOverlay.style.opacity='1'; modalOverlay.style.pointerEvents='auto'; }
-  document.getElementById('closeAbout').addEventListener('click',()=>{ aboutModal.classList.remove('visible'); aboutModal.setAttribute('aria-hidden','true'); modalOverlay.style.opacity='0'; modalOverlay.style.pointerEvents='none'; });
-
-  // Misc buttons
-  document.getElementById('homeBtn').addEventListener('click',()=>renderFeed(mockEvents));
-  document.getElementById('searchBtn').addEventListener('click',()=>document.getElementById('searchInput').focus());
-  document.getElementById('inboxBtn').addEventListener('click',()=>showToast('Inbox (mock) — not implemented.'));
-  document.getElementById('menuBtn').addEventListener('click',()=>{ showToast('Menu (mock) — open Account or About from profile.'); openAuth('login'); });
-
-  // Initial render
-  renderFeed(mockEvents);
-  window.addEventListener('resize',()=>{ if(window.innerWidth<980) rightPanel.style.display='none'; else rightPanel.style.display='block'; });
-  if(window.innerWidth>=980 && mockEvents.length>0) setTimeout(()=>{ openDetail(mockEvents[0].id); },800);
-
-}); // DOM ready
 </script>
 </body>
 </html>
