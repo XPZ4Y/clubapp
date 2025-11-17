@@ -11,3 +11,5 @@
 006: If person who signed up for the event 
 	no show up, credibility drops.
 007: sign in using phone number only..
+
+View the entire frontend: https://shawnpeter578.github.io/clubapp/
