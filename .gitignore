@@ -1,0 +1,14 @@
+# Node.js dependencies
+node_modules/
+
+# Text files
+*.txt
+
+# Batch files
+*.bat
+
+# .env
+*.env
+
+#file
+trash/
