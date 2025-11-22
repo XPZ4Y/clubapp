@@ -1,8 +1,22 @@
 # clubspot.com
-[![GitHub Release](https://img.shields.io/github/v/release/google/guava)](https://github.com/google/guava/releases/latest)
+[![GitHub Release]('https://img.shields.io/badge/Live-Deployment-success?style=for-the-badge&logo=render')](https://github.com/google/guava/releases/latest)
 ## Deployment:
-> The render webpage is linked to XPZ4Y's fork of this repository ;)
+The render webpage is linked to `XPZ4Y's fork` of this repository ;)
 https://workforce-wellness-tracker.onrender.com
+
+## A Next-Generation Event & Community Platform
+ClubSpot redefines how communities organize and participate in events. We foster genuine engagement and accountability through a unique credibility system, ensuring that hosts deliver and participants show up.
+
+## Start contributing:
+
+After pulling the `Shawnpeter578/clubapp` repository, let's set up the environment
+
+In your root directory
+```xml
+npm install
+npm start
+```
+
 
 ## Course of action
 > 001: creating frontend
