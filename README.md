@@ -1,5 +1,5 @@
 # clubspot.com
-
+[![GitHub Release](https://img.shields.io/github/v/release/google/guava)](https://github.com/google/guava/releases/latest)
 ## Deployment:
 > The render webpage is linked to XPZ4Y's fork of this repository ;)
 https://workforce-wellness-tracker.onrender.com
