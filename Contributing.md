@@ -1,7 +1,7 @@
 How to contribute
 =================
 
-Thank you so much for wanting to contribute to KBSR Clubspot! Here are a few important
+Thank you so much for wanting to contribute to Clubspot! Here are a few important
 things you should know about contributing:
 
 1.  Backend changes require discussion, use cases, etc. Code comes later. 
