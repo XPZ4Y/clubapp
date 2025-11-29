@@ -32,3 +32,55 @@ frontend in form of data fetched from one of the ONLY two sources:
 2. Mongodb (for the storage of events & userdata in this prototype)
 3. Requires the built `/dist` directory within the directory it is in.
 
+
+
+Issue:
+this frontend code snippet writes user credentials after google auth directly into the
+*localStorage*, and the frontend trusts blindly whatever is in the local storage.
+I can exploit this by editing my name in the local storage
+```js
+  const handleLogin = async (token) => {
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+      if (res.ok) {
+        const userData = await res.json();
+        setUser(userData.value || userData); // Handle findOneAndUpdate return
+        localStorage.setItem('clubspot_user', JSON.stringify(userData.value || userData));
+        fetchEvents();
+      }
+    } catch (e) {
+      console.error("Login failed", e);
+    }
+  };
+```
+This is the comment handler (backend), enables user to post comments. Notice how it trusts
+whatever is on the *req.body*? Rookie mistake. Never trust the frontend, it is the frontend that
+trusts the server.
+```js
+	app.post('/api/events/comment', async (req, res) => {
+	    try {
+	        const { eventId, userId, userName, text } = req.body;
+	        
+	        const comment = {
+	            userId,
+	            userName,
+	            text,
+	            timestamp: new Date()
+	        };
+
+	        await eventsCollection.updateOne(
+	            { _id: new ObjectId(eventId) },
+	            { $push: { comments: comment } }
+	        );
+
+	        res.status(200).json({ success: true });
+	    } catch (e) {
+	        res.status(500).json({ error: "Comment failed" });
+	    }
+	});
+```
+Goal: To make sure the user can't edit the local storage.
