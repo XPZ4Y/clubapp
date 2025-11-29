@@ -125,6 +125,22 @@ app.post('/api/auth/google', async (req, res) => {
     } catch (e) { /* ... error handling ... */ }
 });
 
+app.get('/api/auth/me', authenticateJWT, async (req, res) => {
+    try {
+        // If the code reaches here, the middleware 'authenticateJWT' passed
+        // and req.userId is valid.
+        const user = await usersCollection.findOne(
+            { _id: new ObjectId(req.userId) }, 
+            { projection: { _id: 1, name: 1, picture: 1, joinedEvents: 1 } }
+        );
+
+        if (!user) return res.status(401).json({ error: "User not found" });
+
+        res.json(user);
+    } catch (e) {
+        res.status(500).json({ error: "Session check failed" });
+    }
+});
 // 2. Get All Events
 app.get('/api/events', async (req, res) => {
     try {

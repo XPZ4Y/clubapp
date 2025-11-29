@@ -20,13 +20,36 @@ const App = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Initial Fetch & Auth Check
+  
+
   useEffect(() => {
-    // Check localStorage for persisted user (Simple implementation)
-    const storedUser = localStorage.getItem('clubspot_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      fetchEvents();
-    }
+    const checkSession = async () => {
+      try {
+        // 1. Ask server: "Do I have a valid cookie?"
+        const res = await fetch('/api/auth/me', { 
+           credentials: 'include' // CRITICAL: sends the cookie
+        });
+
+        if (res.ok) {
+          // 2. YES: Server verified cookie. Restore user state.
+          const userData = await res.json();
+          setUser(userData); 
+          fetchEvents();
+        } else {
+          // 3. NO: No cookie found (or token expired).
+          // This block runs for all your "Old Users"
+          console.log("No valid session found. Logging out.");
+          // NUCLEAR OPTION: Wipe any old insecure data
+          localStorage.removeItem('clubspot_user'); 
+          setUser(null);
+        }
+      } catch (e) {
+        console.error("Session check failed", e);
+        setUser(null);
+      }
+    };
+
+    checkSession();
   }, []);
 
   const fetchEvents = async () => {
@@ -108,6 +131,8 @@ const App = () => {
        }
     } catch (e) { console.error(e); }
   };
+
+
 
   return (
     <div className="min-h-screen w-full bg-gray-50 font-sans text-gray-900 selection:bg-indigo-100 selection:text-indigo-900 flex">

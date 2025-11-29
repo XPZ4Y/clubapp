@@ -184,4 +184,14 @@ Goal: To make sure the user can't edit the local storage, or something that seal
 Assume all other parts of the code are iniialized. Just fix the Frontend-Backend communication
 
 
-FIX
+a primitive presistance checker inside app() component of app.js
+```js
+useEffect(() => {
+    // Check localStorage for persisted user (Simple implementation)
+    const storedUser = localStorage.getItem('clubspot_user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      fetchEvents();
+    }
+  }, []);
+```
