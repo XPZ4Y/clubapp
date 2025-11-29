@@ -1,26 +1,65 @@
-name: Android CI
+name: Android Build - Project Only
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main, master ]
+    paths:
+      - 'project/**'  # Only trigger when project directory changes
   pull_request:
-    branches: [ "main" ]
+    branches: [ main, master ]
+    paths:
+      - 'project/**'  # Only trigger for PRs affecting project directory
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
+    
     steps:
-    - uses: actions/checkout@v4
-    - name: set up JDK 11
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: project/package-lock.json
+      
+    - name: Install dependencies
+      working-directory: ./project
+      run: npm ci
+      
+    - name: Build React app
+      working-directory: ./project
+      run: npm run build
+      
+    - name: Sync Capacitor
+      working-directory: ./project
+      run: npx cap sync
+      
+    - name: Setup Java
       uses: actions/setup-java@v4
       with:
-        java-version: '11'
         distribution: 'temurin'
-        cache: gradle
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-    - name: Build with Gradle
-      run: ./gradlew build
+        java-version: '17'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+      
+    - name: Build Android APK
+      working-directory: ./project/android
+      run: ./gradlew assembleDebug
+        
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug
+        path: project/android/app/build/outputs/apk/debug/app-debug.apk
+        retention-days: 30
+        
+    - name: Upload entire APK directory
+      uses: actions/upload-artifact@v4
+      with:
+        name: all-apks
+        path: project/android/app/build/outputs/apk/
+        retention-days: 30
