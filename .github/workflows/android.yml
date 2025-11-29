@@ -23,15 +23,22 @@ jobs:
       working-directory: ./project
       run: |
         npm ci
-        npm install @capacitor/android
-        
+        # Install Capacitor CLI and Android platform
+        npm install @capacitor/cli @capacitor/core @capacitor/android
+      
     - name: Build React app
       working-directory: ./project
       run: npm run build
       
+    - name: Install Capacitor CLI globally (optional)
+      run: npm install -g @capacitor/cli
+      
     - name: Add Android platform
       working-directory: ./project
-      run: npx cap add android
+      run: |
+        npx cap add android
+        # If the above fails, try with force flag
+        npx cap add android --force
       
     - name: Sync Capacitor
       working-directory: ./project
@@ -54,3 +61,8 @@ jobs:
       with:
         name: app-debug
         path: project/android/app/build/outputs/apk/debug/app-debug.apk
+        
+    - name: List all generated files (for debugging)
+      run: |
+        echo "Android directory structure:"
+        find project/android -type f -name "*.gradle" -o -name "gradlew" -o -name "*.apk" | head -20
