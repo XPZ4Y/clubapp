@@ -4,11 +4,11 @@ on:
   push:
     branches: [ main, master ]
     paths:
-      - 'project/**'  # Only trigger when project directory changes
+      - 'project/**'
   pull_request:
     branches: [ main, master ]
     paths:
-      - 'project/**'  # Only trigger for PRs affecting project directory
+      - 'project/**'
 
 jobs:
   build:
@@ -43,23 +43,41 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
         
+    # Manual Android SDK setup instead of android-actions/setup-android
     - name: Setup Android SDK
       uses: android-actions/setup-android@v2
+      with:
+        # Point to the Gradle files in the project directory
+        gradle-build-path: project/android
+        
+    # Alternative: Manual Android SDK setup
+    - name: Setup Android SDK Manually
+      run: |
+        echo "y" | sdkmanager "platforms;android-33" "build-tools;33.0.0"
+      env:
+        ANDROID_HOME: /usr/local/lib/android/sdk
+        ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        
+    - name: Cache Gradle
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+          project/android/.gradle
+        key: ${{ runner.os }}-gradle-${{ hashFiles('project/android/gradle/wrapper/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
       
     - name: Build Android APK
       working-directory: ./project/android
-      run: ./gradlew assembleDebug
+      run: |
+        chmod +x gradlew
+        ./gradlew assembleDebug --no-daemon
         
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
         path: project/android/app/build/outputs/apk/debug/app-debug.apk
-        retention-days: 30
-        
-    - name: Upload entire APK directory
-      uses: actions/upload-artifact@v4
-      with:
-        name: all-apks
-        path: project/android/app/build/outputs/apk/
         retention-days: 30
