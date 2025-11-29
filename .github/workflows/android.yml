@@ -1,4 +1,4 @@
-name: Android Build - Generate Everything
+name: Android Build - Java Fix
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
     - name: Setup Node.js 20
       uses: actions/setup-node@v4
       with:
-        node-version: '20'  # Changed from 18 to 20
+        node-version: '20'
         cache: 'npm'
         cache-dependency-path: project/package-lock.json
       
@@ -27,7 +27,6 @@ jobs:
       working-directory: ./project
       run: |
         npm ci
-        # Ensure Capacitor is installed with correct version
         npm install @capacitor/cli @capacitor/core @capacitor/android
       
     - name: Build React app
@@ -37,27 +36,31 @@ jobs:
     - name: Generate Android platform
       working-directory: ./project
       run: |
-        # Verify Node version
-        node --version
-        # This command creates the entire Android project with ALL Gradle files
         npx cap add android
+        npx cap sync
       
-    - name: Sync to ensure everything is ready
-      working-directory: ./project
-      run: npx cap sync
-      
-    - name: Setup JDK 17
+    - name: Setup JDK 17 (Match compile version)
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
       
-    - name: Build Android APK
+    - name: Fix Java Version in Android project
       working-directory: ./project/android
       run: |
-        # Make gradlew executable
+        # Update compileOptions to use Java 17 instead of 21
+        sed -i 's/sourceCompatibility JavaVersion.VERSION_21/sourceCompatibility JavaVersion.VERSION_17/g' app/build.gradle
+        sed -i 's/targetCompatibility JavaVersion.VERSION_21/targetCompatibility JavaVersion.VERSION_17/g' app/build.gradle
+        sed -i 's/compileOptions.sourceCompatibility JavaVersion.VERSION_21/compileOptions.sourceCompatibility JavaVersion.VERSION_17/g' app/build.gradle
+        sed -i 's/compileOptions.targetCompatibility JavaVersion.VERSION_21/compileOptions.targetCompatibility JavaVersion.VERSION_17/g' app/build.gradle
+        
+        # Also check capacitor-android build.gradle if it exists
+        find . -name "build.gradle" -exec grep -l "VERSION_21" {} \; | head -5
+      
+    - name: Build Android APK with Java 17
+      working-directory: ./project/android
+      run: |
         chmod +x gradlew
-        # This builds the APK and will generate any missing Gradle files
         ./gradlew assembleDebug --no-daemon
         
     - name: Upload APK
