@@ -105,7 +105,7 @@ describe('API Integration Flow', () => {
       .get('/api/auth/me')
       .set('Cookie', authCookie);
     
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(200);//200 means successful
     expect(res.body.email).toBe('testuser@example.com');
   });
 

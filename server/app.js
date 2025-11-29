@@ -112,7 +112,7 @@ app.post('/api/auth/google', async (req, res) => {
         // Handle Mongo driver differences: findOneAndUpdate might return { value: doc } or just doc depending on version
         const user = result.value || result; 
 
-        const token = jwt.sign({ userId: user._id, name: user.name }, SECRET_KEY, { expiresIn: '1h' });
+        const token = jwt.sign({ userId: user._id, name: user.name }, SECRET_KEY, { expiresIn: '365d' });
 
         res.cookie('auth_token', token, { 
             httpOnly: true, 
