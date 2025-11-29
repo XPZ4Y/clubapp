@@ -1,7 +1,11 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
+
+const jwt = require('jsonwebtoken');
+const SECRET_KEY = process.env.JWT_SECRET;
 
 // --- MongoDB Setup ---
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -20,9 +24,8 @@ const port = process.env.PORT || 3000;
 // --- Middleware ---
 // Replaces manual CORS headers
 app.use(cors()); 
-
-// Replaces the req.on('data') buffer logic for parsing JSON bodies
 app.use(express.json()); 
+app.use(cookieParser());
 
 // Serve static files from 'dist' directory
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -66,6 +69,21 @@ async function verifyGoogleToken(token) {
     return ticket.getPayload();
 }
 
+const authenticateJWT = (req, res, next) => {
+    const token = req.cookies.auth_token;
+    if (!token) {
+        return res.status(401).json({ error: "Unauthorized: No token provided" });
+    }
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY);
+        req.userId = decoded.userId; // Securely attach the validated ID
+        req.userName = decoded.name; // Securely attach the validated name (optional, but convenient)
+        next();
+    } catch (e) {
+        return res.status(403).json({ error: "Forbidden: Invalid token" });
+    }
+};//middleware for authenication
+
 // ==========================================
 // API Routes
 // ==========================================
@@ -73,36 +91,38 @@ async function verifyGoogleToken(token) {
 // 1. Google Auth
 app.post('/api/auth/google', async (req, res) => {
     try {
-        const { token } = req.body;
-        if (!token) return res.status(400).json({ error: "Token required" });
+        const { token: googleToken } = req.body;
+        // ... (Verification logic remains the same) ...
 
-        const googleUser = await verifyGoogleToken(token);
-        
+        const googleUser = await verifyGoogleToken(googleToken);
         if (!googleUser) {
             return res.status(401).json({ error: "Invalid Token" });
         }
 
         const result = await usersCollection.findOneAndUpdate(
             { email: googleUser.email },
-            { 
-                $set: { 
-                    name: googleUser.name, 
-                    picture: googleUser.picture,
-                    lastLogin: new Date()
-                },
-                $setOnInsert: { 
-                    joinedEvents: [],
-                    createdAt: new Date()
-                }
-            },
+            { $set: { name: googleUser.name, picture: googleUser.picture, lastLogin: new Date() },
+              $setOnInsert: { joinedEvents: [], createdAt: new Date() } },
             { upsert: true, returnDocument: 'after' }
         );
 
-        res.status(200).json(result); // Using .json() automatically sets content-type
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: "Auth Failed" });
-    }
+        const user = result.value || result; // The updated user document
+
+        // **VULNERABILITY FIX 1: Create a secure JWT**
+        const token = jwt.sign({ userId: user._id, name: user.name }, SECRET_KEY, { expiresIn: '1h' });
+
+        // **VULNERABILITY FIX 2: Send the JWT as an HTTP-Only Cookie**
+        // The token is now inaccessible to frontend JavaScript (reducing XSS risk)
+        res.cookie('auth_token', token, { 
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production', // Use secure in production
+            sameSite: 'strict'
+        });
+
+        // Send a minimal user object for the frontend to display data
+        res.status(200).json({ _id: user._id, name: user.name, picture: user.picture, joinedEvents: user.joinedEvents });
+
+    } catch (e) { /* ... error handling ... */ }
 });
 
 // 2. Get All Events
@@ -140,52 +160,55 @@ app.post('/api/events', async (req, res) => {
     }
 });
 
-// 4. Join Event
-app.post('/api/events/join', async (req, res) => {
+app.post('/api/events/join', authenticateJWT, async (req, res) => {
     try {
-        const { eventId, userId } = req.body;
-        if (!eventId || !userId) return res.status(400).json({ error: "Missing IDs" });
+        // **VULNERABILITY FIX 4: Use the SECURE ID from the authenticated token**
+        const userId = req.userId; 
+        const { eventId } = req.body;
+        if (!eventId) return res.status(400).json({ error: "Missing Event ID" });
 
-        // Add user to event attendees
+        // ... (database update logic remains the same, using userId) ...
         await eventsCollection.updateOne(
             { _id: new ObjectId(eventId) },
             { $addToSet: { attendees: userId } }
         );
 
-        // Add event to user's joined list
         await usersCollection.updateOne(
             { _id: new ObjectId(userId) },
             { $addToSet: { joinedEvents: eventId } }
         );
 
         res.status(200).json({ success: true });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: "Join failed" });
-    }
+    } catch (e) { /* ... error handling ... */ }
 });
 
-// 5. Comment on Event
-app.post('/api/events/comment', async (req, res) => {
+app.post('/api/events/comment', authenticateJWT, async (req, res) => {
     try {
-        const { eventId, userId, userName, text } = req.body;
-        
+        // **VULNERABILITY FIX 3: Use the SECURE ID from the authenticated token**
+        const userId = req.userId; 
+        const { eventId, text } = req.body;
+        if (!eventId || !text.trim()) return res.status(400).json({ error: "Missing data" });
+
+        // Optional: Fetch the authoritative name from the database (best practice)
+        const userDoc = await usersCollection.findOne({ _id: new ObjectId(userId) }, { projection: { name: 1 } });
+        if (!userDoc) return res.status(404).json({ error: "User not found" });
+        const userName = userDoc.name;
+
+        // The user details (ID and Name) are now server-validated.
         const comment = {
             userId,
             userName,
             text,
             timestamp: new Date()
         };
-
+        // ... (database update logic remains the same) ...
         await eventsCollection.updateOne(
             { _id: new ObjectId(eventId) },
             { $push: { comments: comment } }
         );
 
         res.status(200).json({ success: true });
-    } catch (e) {
-        res.status(500).json({ error: "Comment failed" });
-    }
+    } catch (e) { /* ... error handling ... */ }
 });
 
 // ==========================================

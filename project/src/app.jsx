@@ -45,13 +45,19 @@ const App = () => {
     try {
       const res = await fetch('/api/auth/google', {
         method: 'POST',
+        // Credentials must be included for the browser to send/receive cookies
+        credentials: 'include', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
       });
       if (res.ok) {
-        const userData = await res.json();
-        setUser(userData.value || userData); // Handle findOneAndUpdate return
-        localStorage.setItem('clubspot_user', JSON.stringify(userData.value || userData));
+        // Server returns minimal user data (e.g., {_id, name, joinedEvents})
+        const userData = await res.json(); 
+        
+        // **VULNERABILITY FIX 5: ONLY set non-sensitive UI state**
+        setUser(userData); 
+        // **REMOVED: localStorage.setItem('clubspot_user', ...)**
+        
         fetchEvents();
       }
     } catch (e) {
@@ -64,17 +70,18 @@ const App = () => {
     try {
       const res = await fetch('/api/events/join', {
         method: 'POST',
+        credentials: 'include', // Important for sending the cookie
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventId, userId: user._id })
+        body: JSON.stringify({ eventId })
       });
       if (res.ok) {
         // Optimistic UI update or Refetch
-        // Updating user state locally for immediate feedback
         const updatedUser = { ...user, joinedEvents: [...(user.joinedEvents || []), eventId] };
         setUser(updatedUser);
-        localStorage.setItem('clubspot_user', JSON.stringify(updatedUser));
         
-        // Update events list to show attendee count increase
+        // **REMOVED: localStorage.setItem('clubspot_user', ...)**
+        
+        // ... (events update logic remains the same) ...
         setEvents(events.map(e => 
           e._id === eventId 
             ? { ...e, attendees: [...(e.attendees || []), user._id] }
@@ -91,8 +98,10 @@ const App = () => {
     try {
        const res = await fetch('/api/events/comment', {
          method: 'POST',
+         credentials: 'include', // Important for sending the cookie
          headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ eventId, userId: user._id, userName: user.name, text })
+         // **VULNERABILITY FIX 7: ONLY send eventId and text**
+         body: JSON.stringify({ eventId, text })
        });
        if (res.ok) {
          fetchEvents(); // Refetch to see new comment
