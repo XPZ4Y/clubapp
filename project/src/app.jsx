@@ -13,30 +13,31 @@ import {EventCard} from './ui/event-card'
 import {Dashboard} from './ui/dashboard'
 import {ProfilePage} from './ui/profile-page'
 
+// --- CONFIGURATION ---
+// TODO: REPLACE THIS WITH YOUR ACTUAL BACKEND SERVER URL
+// Example: const API_BASE = 'https://my-club-app.render.com';
+const API_BASE = 'https://clubspot-beta.onrender.com/'; 
+
 const App = () => {
-  const [user, setUser] = useState(null); // Auth state
+  const [user, setUser] = useState(null); 
   const [events, setEvents] = useState([]);
   const [activeTab, setActiveTab] = useState('home');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Initial Fetch & Auth Check
-  
-
+  // --- Initial Fetch & Auth Check ---
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // 1. Ask server: "Do I have a valid cookie?"
-        const res = await fetch('/api/auth/me', { 
-           credentials: 'include' // CRITICAL: sends the cookie
+        // CHANGED: Added API_BASE to URL
+        const res = await fetch(`${API_BASE}/api/auth/me`, { 
+           credentials: 'include' 
         });
 
         if (res.ok) {
-          // 2. YES: Server verified cookie. Restore user state.
           const userData = await res.json();
           setUser(userData); 
           fetchEvents();
         } else {
-          // 3. NO: No cookie found (or token expired).
           console.log("No valid session found. Logging out.");
           localStorage.removeItem('clubspot_user'); 
           setUser(null);
@@ -52,7 +53,8 @@ const App = () => {
 
   const fetchEvents = async () => {
     try {
-      const res = await fetch('/api/events');
+      // CHANGED: Added API_BASE to URL
+      const res = await fetch(`${API_BASE}/api/events`);
       if (res.ok) {
         const data = await res.json();
         setEvents(data);
@@ -64,7 +66,8 @@ const App = () => {
 
   const handleLogin = async (token) => {
     try {
-      const res = await fetch('/api/auth/google', {
+      // CHANGED: Added API_BASE to URL
+      const res = await fetch(`${API_BASE}/api/auth/google`, {
         method: 'POST',
         credentials: 'include', 
         headers: { 'Content-Type': 'application/json' },
@@ -80,10 +83,10 @@ const App = () => {
     }
   };
 
-  // --- Sign Out Handler (RETAINS LOCATION) ---
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      // CHANGED: Added API_BASE to URL
+      await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
       setUser(null);
       setActiveTab('home');
     } catch (e) {
@@ -94,14 +97,14 @@ const App = () => {
   const handleJoinEvent = async (eventId) => {
     if (!user) return;
     try {
-      const res = await fetch('/api/events/join', {
+      // CHANGED: Added API_BASE to URL
+      const res = await fetch(`${API_BASE}/api/events/join`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ eventId })
       });
       if (res.ok) {
-        // Optimistic UI update or Refetch
         const updatedUser = { ...user, joinedEvents: [...(user.joinedEvents || []), eventId] };
         setUser(updatedUser);
         
@@ -119,23 +122,24 @@ const App = () => {
   const handleComment = async (eventId, text) => {
     if (!user || !text.trim()) return;
     try {
-       const res = await fetch('/api/events/comment', {
+       // CHANGED: Added API_BASE to URL
+       const res = await fetch(`${API_BASE}/api/events/comment`, {
          method: 'POST',
          credentials: 'include',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({ eventId, text })
        });
        if (res.ok) {
-         fetchEvents(); // Refetch to see new comment
+         fetchEvents(); 
        }
     } catch (e) { console.error(e); }
   };
 
-  // --- Delete Event Handler ---
   const handleDeleteEvent = async (eventId) => {
     if (!confirm("Are you sure you want to delete this event?")) return;
     try {
-      const res = await fetch(`/api/events/${eventId}`, {
+      // CHANGED: Added API_BASE to URL
+      const res = await fetch(`${API_BASE}/api/events/${eventId}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -147,16 +151,16 @@ const App = () => {
     }
   };
 
-  // --- Delete Comment Handler ---
   const handleDeleteComment = async (eventId, commentId) => {
     if (!confirm("Delete this comment?")) return;
     try {
-      const res = await fetch(`/api/events/${eventId}/comments/${commentId}`, {
+      // CHANGED: Added API_BASE to URL
+      const res = await fetch(`${API_BASE}/api/events/${eventId}/comments/${commentId}`, {
         method: 'DELETE',
         credentials: 'include'
       });
       if (res.ok) {
-        fetchEvents(); // Refetch to update UI
+        fetchEvents(); 
       }
     } catch (e) {
       console.error("Delete comment failed", e);
@@ -200,19 +204,18 @@ const App = () => {
                       user={user} 
                       onJoin={handleJoinEvent} 
                       onComment={handleComment}
-                      onDeleteEvent={handleDeleteEvent} // Pass handler
-                      onDeleteComment={handleDeleteComment} // Pass handler
+                      onDeleteEvent={handleDeleteEvent} 
+                      onDeleteComment={handleDeleteComment} 
                     />
                   ))}
                 </div>
              </div>
           )}
           {activeTab === 'profile' && user && (
-            // Simplified rendering block: The sign-out button is now inside ProfilePage
             <ProfilePage 
               user={user} 
               events={events} 
-              handleLogout={handleLogout} // Pass the handler
+              handleLogout={handleLogout} 
             />
           )}
           {activeTab === 'community' && (
