@@ -1,6 +1,8 @@
 name: Android Release Build and Deploy
 
 on:
+  # Trigger immediately when this specific file is modified
+  push:
   # 1. Change the trigger to run only when a new release is published
   release:
     types: [published]
@@ -26,11 +28,47 @@ jobs:
       working-directory: ./project
       run: |
         npm ci
-        npm install @capacitor/cli @capacitor/core @capacitor/android
+        # Added @capacitor/assets to the installation list
+        npm install @capacitor/cli @capacitor/core @capacitor/android @capacitor/assets
 
     - name: Build React app
       working-directory: ./project
       run: npm run build
+
+    # NEW STEP: Generate Icons and Splash Screens
+    - name: Generate App Assets (Icon & Splash)
+      working-directory: ./project
+      run: |
+        # 1. Create the 'assets' folder that capacitor-assets expects
+        mkdir -p assets
+
+        # 2. Find the image in project/ and copy it to the assets folder
+        # We try 'logo.png', 'icon.png', or fallback to the first PNG found.
+        if [ -f "logo.png" ]; then
+          echo "Found logo.png, using it for icons."
+          cp logo.png assets/icon.png
+          cp logo.png assets/splash.png
+        elif [ -f "icon.png" ]; then
+          echo "Found icon.png, using it for icons."
+          cp icon.png assets/icon.png
+          cp icon.png assets/splash.png
+        else
+          # Fallback: Find any PNG file in the current directory
+          SOURCE_IMG=$(find . -maxdepth 1 -name "*.png" | head -n 1)
+          if [ -n "$SOURCE_IMG" ]; then
+            echo "Found $SOURCE_IMG, using it for icons."
+            cp "$SOURCE_IMG" assets/icon.png
+            cp "$SOURCE_IMG" assets/splash.png
+          else
+            echo "::warning::No PNG image found in project/ directory! Skipping icon generation."
+          fi
+        fi
+
+        # 3. Run the generator for Android
+        # Only runs if we successfully placed an icon.png
+        if [ -f "assets/icon.png" ]; then
+          npx capacitor-assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'
+        fi
 
     - name: Generate Android platform
       working-directory: ./project
@@ -71,6 +109,14 @@ jobs:
         echo "apk_path=$ABSOLUTE_APK_PATH" >> $GITHUB_OUTPUT
         echo "Found APK at: $ABSOLUTE_APK_PATH"
       shell: bash
+
+    # NEW: Upload the APK as a build artifact (Visible on the Actions Summary page)
+    # This ensures you can get the APK even if it wasn't a formal Release
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug
+        path: ${{ steps.build_and_find_apk.outputs.apk_path }}
 
     # 2. Add the release step to attach the artifact
     - name: Attach APK to GitHub Release

@@ -1,15 +1,16 @@
 {
-  "appId": "com.example.myapp",
-  "appName": "MyApp",
+  "appId": "com.mynewcompany.mynewapp",
+  "appName": "ClubSpot",
   "webDir": "dist",
   "bundledWebRuntime": false,
-  "plugins": {
-    "SplashScreen": {
-      "launchShowDuration": 3000,
-      "backgroundColor": "#ffffff"
-    }
-  },
+  "plugins": {},
   "server": {
     "cleartext": true
+  },
+  "android": {
+    "assets": "ic_launcher"
+  },
+  "ios": {
+    "assets": "AppIcon"
   }
 }
