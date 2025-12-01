@@ -22,16 +22,31 @@ const app = express();
 
 // --- Middleware ---
 app.use(cors({
-  // Allow both your localhost (for testing) and production frontend
   origin: [
-    'http://localhost:5173', // Vite default
-    'http://localhost:3000', // React default
-    'https://your-frontend-domain.vercel.app' // Your production frontend
+    'http://localhost:5173',      // Your local dev URL
+    'http://localhost:3000',      // Alternative local URL
+    'https://clubspot-beta.onrender.com', // Your production URL
+    'capacitor://localhost',      // If using Capacitor iOS
+    'http://localhost',           // If using Capacitor Android
   ],
-  credentials: true, // REQUIRED because your frontend uses credentials: 'include'
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  credentials: true, // This allows the Cookie to be sent/received
+  methods: ['POST', 'PUT', 'GET', 'OPTIONS', 'HEAD', 'DELETE'],
 }));
+
+// In your backend app.js
+app.use(session({
+  secret: process.env.SESSION_SECRET, // Your secret
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+    httpOnly: true,
+    // CRITICAL CHANGES BELOW:
+    secure: true,       // Must be true for cross-site cookies (Render uses HTTPS)
+    sameSite: 'none'    // Allows cookie to be sent from different domains (Localhost/App -> Render)
+  }
+}));
+app.set('trust proxy', 1); // Trust Render's proxy so 'secure: true' works
 
 app.use(express.json()); 
 app.use(cookieParser());
