@@ -16,7 +16,7 @@ import {ProfilePage} from './ui/profile-page'
 // --- CONFIGURATION ---
 // TODO: REPLACE THIS WITH YOUR ACTUAL BACKEND SERVER URL
 // Example: const API_BASE = 'https://my-club-app.render.com';
-const API_BASE = 'https://clubspot-beta.onrender.com/'; 
+const API_BASE = 'https://clubspot-beta.onrender.com'; 
 
 const App = () => {
   const [user, setUser] = useState(null); 
