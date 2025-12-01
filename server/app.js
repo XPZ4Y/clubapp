@@ -127,6 +127,13 @@ app.post('/api/auth/google', async (req, res) => {
         res.status(500).json({ error: "Authentication failed" });
     }
 });
+
+// 2. Sign Out
+app.post('/api/auth/logout', (req, res) => {
+    res.clearCookie('auth_token');
+    res.status(200).json({ success: true, message: "Logged out successfully" });
+});
+
 app.get('/api/auth/me', authenticateJWT, async (req, res) => {
     try {
         const user = await usersCollection.findOne(
@@ -150,16 +157,24 @@ app.get('/api/events', async (req, res) => {
         res.status(500).json({ error: "Fetch failed" });
     }
 });
-app.post('/api/events', async (req, res) => {
+
+// 3. Create Event (Now Authenticated to capture Creator Name)
+app.post('/api/events', authenticateJWT, async (req, res) => {
     try {
-        const { title, date, time, location, category, description, creatorId, image } = req.body;
+        const { title, date, time, location, category, description, image } = req.body;
         
-        if (!title || !date || !creatorId) {
+        // We now get creatorId and creatorName from the JWT token for security/consistency
+        const creatorId = req.userId;
+        const creatorName = req.userName;
+
+        if (!title || !date) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
         const newEvent = {
-            title, date, time, location, category, description, creatorId,
+            title, date, time, location, category, description, 
+            creatorId, 
+            creatorName, // Feature: Show which account posted it
             image: image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87",
             attendees: [],
             comments: [],
@@ -169,9 +184,36 @@ app.post('/api/events', async (req, res) => {
         const result = await eventsCollection.insertOne(newEvent);
         res.status(201).json({ success: true, eventId: result.insertedId });
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: "Creation failed" });
     }
 });
+
+// 4. Delete Event (If it is yours)
+app.delete('/api/events/:id', authenticateJWT, async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const userId = req.userId;
+
+        const event = await eventsCollection.findOne({ _id: new ObjectId(eventId) });
+
+        if (!event) {
+            return res.status(404).json({ error: "Event not found" });
+        }
+
+        // Authorization Check
+        if (event.creatorId !== userId) {
+            return res.status(403).json({ error: "Unauthorized: You can only delete your own events" });
+        }
+
+        await eventsCollection.deleteOne({ _id: new ObjectId(eventId) });
+        res.status(200).json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "Delete failed" });
+    }
+});
+
 app.post('/api/events/join', authenticateJWT, async (req, res) => {
     try {
         const userId = req.userId; 
@@ -193,6 +235,7 @@ app.post('/api/events/join', authenticateJWT, async (req, res) => {
         res.status(500).json({ error: "Join failed" });
     }
 });
+
 app.post('/api/events/comment', authenticateJWT, async (req, res) => {
     try {
         const userId = req.userId; 
@@ -204,6 +247,7 @@ app.post('/api/events/comment', authenticateJWT, async (req, res) => {
         const userName = userDoc.name;
 
         const comment = {
+            _id: new ObjectId(), // Feature: Generate ID for deletion
             userId,
             userName,
             text,
@@ -218,6 +262,36 @@ app.post('/api/events/comment', authenticateJWT, async (req, res) => {
         res.status(200).json({ success: true });
     } catch (e) { 
         res.status(500).json({ error: "Comment failed" });
+    }
+});
+
+// 5. Delete Comment (If it is yours)
+app.delete('/api/events/:eventId/comments/:commentId', authenticateJWT, async (req, res) => {
+    try {
+        const { eventId, commentId } = req.params;
+        const userId = req.userId;
+
+        // Use MongoDB $pull to remove the comment where _id matches AND userId matches
+        const result = await eventsCollection.updateOne(
+            { _id: new ObjectId(eventId) },
+            { 
+                $pull: { 
+                    comments: { 
+                        _id: new ObjectId(commentId),
+                        userId: userId 
+                    } 
+                } 
+            }
+        );
+
+        if (result.modifiedCount === 0) {
+            return res.status(403).json({ error: "Failed to delete: Comment not found or unauthorized" });
+        }
+
+        res.status(200).json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "Comment deletion failed" });
     }
 });
 

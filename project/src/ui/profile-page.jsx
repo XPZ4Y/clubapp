@@ -5,7 +5,8 @@ import {
   Trophy, User, X, Loader
 } from 'lucide-react';
 
-export const ProfilePage = ({ user, events }) => {
+// Added handleLogout to props
+export const ProfilePage = ({ user, events, handleLogout }) => {
   const joined = events.filter(e => user.joinedEvents?.includes(e._id));
   return (
     <div className="pb-24 md:pb-10 animate-fade-in w-full">
@@ -52,7 +53,8 @@ export const ProfilePage = ({ user, events }) => {
            {joined.map(event => (
              <div key={event._id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
                 <div className="w-16 h-16 rounded-xl bg-gray-200 overflow-hidden flex-shrink-0">
-                  <img src={event.image} className="w-full h-full object-cover" />
+                  {/* Note: The image src is rendered here */}
+                  <img src={event.image} className="w-full h-full object-cover" /> 
                 </div>
                 <div>
                    <h4 className="font-bold text-gray-900">{event.title}</h4>
@@ -64,6 +66,19 @@ export const ProfilePage = ({ user, events }) => {
              </div>
            ))}
         </div>
+        
+        {/* Sign Out Button moved here */}
+        <div className="p-6 flex justify-center">
+           <button 
+             onClick={handleLogout}
+             className="flex items-center gap-2 px-6 py-3 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-colors"
+           >
+             <LogOut size={20} />
+             Sign Out
+           </button>
+        </div>
+        {/* End of moved Sign Out Button */}
+        
       </div>
     </div>
   );

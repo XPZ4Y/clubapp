@@ -35,6 +35,11 @@ const mockCollection = (collectionName) => ({
       toArray: jest.fn(async () => [...mockDb[collectionName]])
     }))
   })),
+  deleteOne: jest.fn(async (query) => {
+    const initialLen = mockDb[collectionName].length;
+    mockDb[collectionName] = mockDb[collectionName].filter(d => d._id.toString() !== query._id.toString());
+    return { deletedCount: initialLen - mockDb[collectionName].length };
+  }),
   findOneAndUpdate: jest.fn(async (query, update, options) => {
     let doc = mockDb[collectionName].find(d => d.email === query.email);
     if (!doc && options.upsert) {
@@ -52,21 +57,38 @@ const mockCollection = (collectionName) => ({
   }),
   updateOne: jest.fn(async (query, update) => {
     const doc = mockDb[collectionName].find(d => d._id.toString() === query._id.toString());
+    let modifiedCount = 0;
     if (doc) {
       if (update.$addToSet) {
         const key = Object.keys(update.$addToSet)[0];
         const val = update.$addToSet[key];
         if (!doc[key]) doc[key] = [];
         if (!doc[key].includes(val)) doc[key].push(val);
+        modifiedCount = 1;
       }
       if (update.$push) {
         const key = Object.keys(update.$push)[0];
         const val = update.$push[key];
         if (!doc[key]) doc[key] = [];
         doc[key].push(val);
+        modifiedCount = 1;
+      }
+      if (update.$pull) {
+         // Mock $pull logic for comments
+         const key = Object.keys(update.$pull)[0];
+         const filter = update.$pull[key]; // e.g., { _id: '...', userId: '...' }
+         if (doc[key]) {
+             const originalLen = doc[key].length;
+             doc[key] = doc[key].filter(item => {
+                 // Check if item matches the filter criteria
+                 // This is a simple mock implementation matching string IDs
+                 return !(item._id.toString() === filter._id.toString() && item.userId === filter.userId);
+             });
+             if (doc[key].length < originalLen) modifiedCount = 1;
+         }
       }
     }
-    return { matchedCount: doc ? 1 : 0 };
+    return { matchedCount: doc ? 1 : 0, modifiedCount };
   })
 });
 
@@ -105,20 +127,14 @@ describe('API Integration Flow', () => {
       .get('/api/auth/me')
       .set('Cookie', authCookie);
     
-    expect(res.statusCode).toBe(200);//200 means successful
+    expect(res.statusCode).toBe(200);
     expect(res.body.email).toBe('testuser@example.com');
   });
 
-  test('GET /api/events (Initial Fetch)', async () => {
-    const res = await request(app).get('/api/events');
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toEqual([]);
-  });
-
-  test('POST /api/events (Create Event)', async () => {
+  test('POST /api/events (Create Event - Authenticated)', async () => {
     const res = await request(app)
       .post('/api/events')
-      .set('Cookie', authCookie)
+      .set('Cookie', authCookie) // Now required
       .send({
         title: "Test Event",
         date: "2023-12-25",
@@ -126,8 +142,7 @@ describe('API Integration Flow', () => {
         location: "Test Loc",
         category: "Social",
         description: "Desc",
-        creatorId: userId,
-        image: ""
+        // creatorId is now taken from token
       });
 
     expect(res.statusCode).toBe(201);
@@ -152,11 +167,53 @@ describe('API Integration Flow', () => {
     expect(res.statusCode).toBe(200);
   });
 
-  test('GET /api/events (Verify Data Persistence)', async () => {
+  test('GET /api/events (Verify Data Persistence & Creator Name)', async () => {
     const res = await request(app).get('/api/events');
-    const event = res.body.find(e => e._id === eventId);
+    const event = res.body.find(e => e._id.toString() === eventId.toString());
     
     expect(event.attendees).toContain(userId);
+    expect(event.creatorName).toBe('Test User'); // Verify creator name is stored
     expect(event.comments[0].text).toBe("Nice event!");
+    expect(event.comments[0]._id).toBeDefined(); // Verify comment has ID
+  });
+
+  test('DELETE /api/events/:eventId/comments/:commentId (Delete Comment)', async () => {
+    // First fetch to get comment ID
+    let res = await request(app).get('/api/events');
+    let event = res.body.find(e => e._id.toString() === eventId.toString());
+    const commentId = event.comments[0]._id;
+
+    // Delete
+    res = await request(app)
+      .delete(`/api/events/${eventId}/comments/${commentId}`)
+      .set('Cookie', authCookie);
+    
+    expect(res.statusCode).toBe(200);
+
+    // Verify
+    res = await request(app).get('/api/events');
+    event = res.body.find(e => e._id.toString() === eventId.toString());
+    expect(event.comments.length).toBe(0);
+  });
+
+  test('DELETE /api/events/:id (Delete Event)', async () => {
+    const res = await request(app)
+      .delete(`/api/events/${eventId}`)
+      .set('Cookie', authCookie);
+
+    expect(res.statusCode).toBe(200);
+
+    // Verify
+    const fetchRes = await request(app).get('/api/events');
+    const event = fetchRes.body.find(e => e._id.toString() === eventId.toString());
+    expect(event).toBeUndefined();
+  });
+
+  test('POST /api/auth/logout (Sign Out)', async () => {
+    const res = await request(app).post('/api/auth/logout');
+    expect(res.statusCode).toBe(200);
+    // Verify cookie is cleared (headers usually contain Set-Cookie with empty value or expires past)
+    const setCookie = res.headers['set-cookie'][0];
+    expect(setCookie).toMatch(/auth_token=;/); 
   });
 });

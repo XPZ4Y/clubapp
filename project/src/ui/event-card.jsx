@@ -2,17 +2,30 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calendar, Users, Home, MessageSquare, Bell, Search, MapPin, 
   Clock, ChevronRight, Plus, Heart, Share2, Settings, LogOut, 
-  Trophy, User, X, Loader
+  Trophy, User, X, Loader, Trash2
 } from 'lucide-react';
 
-export const EventCard = ({ event, user, onJoin, onComment }) => {
+export const EventCard = ({ event, user, onJoin, onComment, onDeleteEvent, onDeleteComment }) => {
   const [commentText, setCommentText] = useState('');
   const [showComments, setShowComments] = useState(false);
 
   const hasJoined = event.attendees?.includes(user._id);
+  const isCreator = user._id === event.creatorId;
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300 flex flex-col h-full">
+    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300 flex flex-col h-full relative">
+      
+      {/* Delete Event Button - Only for Creator */}
+      {isCreator && onDeleteEvent && (
+        <button 
+          onClick={() => onDeleteEvent(event._id)}
+          className="absolute top-4 left-4 z-10 bg-white/90 p-2 rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm"
+          title="Delete Event"
+        >
+          <Trash2 size={16} />
+        </button>
+      )}
+
       <div className="h-48 overflow-hidden relative">
         <img 
           src={event.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87"} 
@@ -30,6 +43,10 @@ export const EventCard = ({ event, user, onJoin, onComment }) => {
               {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </p>
             <h3 className="text-xl font-bold text-gray-900 leading-tight mb-1">{event.title}</h3>
+            {/* Created By Feature */}
+            {event.creatorName && (
+              <p className="text-xs text-gray-400 font-medium">Posted by {event.creatorName}</p>
+            )}
           </div>
         </div>
         
@@ -84,9 +101,21 @@ export const EventCard = ({ event, user, onJoin, onComment }) => {
                <div className="max-h-32 overflow-y-auto space-y-2 mb-2 custom-scrollbar">
                   {(event.comments || []).length === 0 && <p className="text-xs text-gray-400 text-center">No comments yet.</p>}
                   {(event.comments || []).map((c, idx) => (
-                    <div key={idx} className="bg-white p-2 rounded-lg text-xs shadow-sm">
-                      <span className="font-bold text-indigo-600 mr-1">{c.userName}:</span>
-                      <span className="text-gray-700">{c.text}</span>
+                    <div key={idx} className="bg-white p-2 rounded-lg text-xs shadow-sm flex justify-between items-start group/comment">
+                      <div>
+                        <span className="font-bold text-indigo-600 mr-1">{c.userName}:</span>
+                        <span className="text-gray-700">{c.text}</span>
+                      </div>
+                      
+                      {/* Delete Comment Button - Only for Author */}
+                      {user._id === c.userId && onDeleteComment && (
+                        <button 
+                          onClick={() => onDeleteComment(event._id, c._id)}
+                          className="text-gray-300 hover:text-red-500 opacity-0 group-hover/comment:opacity-100 transition-opacity"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
                     </div>
                   ))}
                </div>

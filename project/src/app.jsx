@@ -37,9 +37,7 @@ const App = () => {
           fetchEvents();
         } else {
           // 3. NO: No cookie found (or token expired).
-          // This block runs for all your "Old Users"
           console.log("No valid session found. Logging out.");
-          // NUCLEAR OPTION: Wipe any old insecure data
           localStorage.removeItem('clubspot_user'); 
           setUser(null);
         }
@@ -68,23 +66,28 @@ const App = () => {
     try {
       const res = await fetch('/api/auth/google', {
         method: 'POST',
-        // Credentials must be included for the browser to send/receive cookies
         credentials: 'include', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
       });
       if (res.ok) {
-        // Server returns minimal user data (e.g., {_id, name, joinedEvents})
         const userData = await res.json(); 
-        
-        // **VULNERABILITY FIX 5: ONLY set non-sensitive UI state**
         setUser(userData); 
-        // **REMOVED: localStorage.setItem('clubspot_user', ...)**
-        
         fetchEvents();
       }
     } catch (e) {
       console.error("Login failed", e);
+    }
+  };
+
+  // --- Sign Out Handler (RETAINS LOCATION) ---
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setUser(null);
+      setActiveTab('home');
+    } catch (e) {
+      console.error("Logout failed", e);
     }
   };
 
@@ -93,7 +96,7 @@ const App = () => {
     try {
       const res = await fetch('/api/events/join', {
         method: 'POST',
-        credentials: 'include', // Important for sending the cookie
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ eventId })
       });
@@ -102,9 +105,6 @@ const App = () => {
         const updatedUser = { ...user, joinedEvents: [...(user.joinedEvents || []), eventId] };
         setUser(updatedUser);
         
-        // **REMOVED: localStorage.setItem('clubspot_user', ...)**
-        
-        // ... (events update logic remains the same) ...
         setEvents(events.map(e => 
           e._id === eventId 
             ? { ...e, attendees: [...(e.attendees || []), user._id] }
@@ -121,9 +121,8 @@ const App = () => {
     try {
        const res = await fetch('/api/events/comment', {
          method: 'POST',
-         credentials: 'include', // Important for sending the cookie
+         credentials: 'include',
          headers: { 'Content-Type': 'application/json' },
-         // **VULNERABILITY FIX 7: ONLY send eventId and text**
          body: JSON.stringify({ eventId, text })
        });
        if (res.ok) {
@@ -132,7 +131,37 @@ const App = () => {
     } catch (e) { console.error(e); }
   };
 
+  // --- Delete Event Handler ---
+  const handleDeleteEvent = async (eventId) => {
+    if (!confirm("Are you sure you want to delete this event?")) return;
+    try {
+      const res = await fetch(`/api/events/${eventId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (res.ok) {
+        setEvents(events.filter(e => e._id !== eventId));
+      }
+    } catch (e) {
+      console.error("Delete event failed", e);
+    }
+  };
 
+  // --- Delete Comment Handler ---
+  const handleDeleteComment = async (eventId, commentId) => {
+    if (!confirm("Delete this comment?")) return;
+    try {
+      const res = await fetch(`/api/events/${eventId}/comments/${commentId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (res.ok) {
+        fetchEvents(); // Refetch to update UI
+      }
+    } catch (e) {
+      console.error("Delete comment failed", e);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-gray-50 font-sans text-gray-900 selection:bg-indigo-100 selection:text-indigo-900 flex">
@@ -165,12 +194,27 @@ const App = () => {
                 <TopBar title="All Events" user={user} />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                   {events.map(event => (
-                    <EventCard key={event._id} event={event} user={user} onJoin={handleJoinEvent} onComment={handleComment} />
+                    <EventCard 
+                      key={event._id} 
+                      event={event} 
+                      user={user} 
+                      onJoin={handleJoinEvent} 
+                      onComment={handleComment}
+                      onDeleteEvent={handleDeleteEvent} // Pass handler
+                      onDeleteComment={handleDeleteComment} // Pass handler
+                    />
                   ))}
                 </div>
              </div>
           )}
-          {activeTab === 'profile' && user && <ProfilePage user={user} events={events} />}
+          {activeTab === 'profile' && user && (
+            // Simplified rendering block: The sign-out button is now inside ProfilePage
+            <ProfilePage 
+              user={user} 
+              events={events} 
+              handleLogout={handleLogout} // Pass the handler
+            />
+          )}
           {activeTab === 'community' && (
             <div className="flex items-center justify-center h-full text-gray-400 font-medium">Community Features Coming Soon</div>
           )}
