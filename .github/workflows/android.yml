@@ -53,22 +53,24 @@ jobs:
     # but for production release, replace `assembleDebug` with `assembleRelease`
     # and include the necessary signing steps above this build step.
 
-    - name: Build Android APK
+    - name: Build Android APK and Find Path
+      id: build_and_find_apk
       working-directory: ./project/android
       run: |
         chmod +x gradlew
-        # CHANGE: We are still building debug for simplicity, but we name it for the release artifact
+        # Build the debug APK (suitable for this example)
         ./gradlew assembleDebug --no-daemon
-
-    - name: Find APK Path
-      id: find_apk
-      working-directory: project/android/app/build/outputs/apk/debug
-      run: |
-        APK_FILE=$(find . -name 'app-debug.apk' | head -n 1)
-        echo "apk_path=$PWD/$APK_FILE" >> $GITHUB_OUTPUT
+        
+        # Find the generated APK file path and save it as an output variable
+        APK_DIR="../app/build/outputs/apk/debug"
+        APK_FILE=$(find $APK_DIR -name 'app-debug.apk' | head -n 1)
+        
+        # Ensure the path is absolute for the release step
+        ABSOLUTE_APK_PATH=$(realpath $APK_FILE)
+        
+        echo "apk_path=$ABSOLUTE_APK_PATH" >> $GITHUB_OUTPUT
+        echo "Found APK at: $ABSOLUTE_APK_PATH"
       shell: bash
-
-    # REMOVED: Upload Artifact step is unnecessary if we attach directly to the release
 
     # 2. Add the release step to attach the artifact
     - name: Attach APK to GitHub Release
@@ -76,7 +78,11 @@ jobs:
       if: github.event_name == 'release'
       uses: softprops/action-gh-release@v2
       with:
-        files: ${{ steps.find_apk.outputs.apk_path }}
+        # Use the release_id from the event payload for reliable finalization
+        # This is the primary fix for the retry issue.
+        release_id: ${{ github.event.release.id }}
+        files: ${{ steps.build_and_find_apk.outputs.apk_path }}
         # The token is automatically available via the environment
         token: ${{ secrets.GITHUB_TOKEN }}
-        tag_name: ${{ github.ref }} # Use the release tag
+        # tag_name is no longer strictly needed when using release_id, but doesn't hurt
+        tag_name: ${{ github.ref }}
