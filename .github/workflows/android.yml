@@ -1,62 +1,82 @@
-name: Android Build - Java Fix
+name: Android Release Build and Deploy
 
 on:
-  push:
-    branches: [ main, master ]
-    paths:
-      - 'project/**'
-      - '.github/workflows/**'
+  # 1. Change the trigger to run only when a new release is published
+  release:
+    types: [published]
+  # Keep workflow_dispatch for manual testing
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js 20
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'npm'
         cache-dependency-path: project/package-lock.json
-      
+
     - name: Install dependencies
       working-directory: ./project
       run: |
         npm ci
         npm install @capacitor/cli @capacitor/core @capacitor/android
-      
+
     - name: Build React app
       working-directory: ./project
       run: npm run build
-      
+
     - name: Generate Android platform
       working-directory: ./project
       run: |
-        npx cap add android
+        npx cap add android || true # Allow to fail if already added
         npx cap sync
-      
+
     # CHANGE: Updated to Java 21 to match Capacitor 6+ defaults
     - name: Setup JDK 21
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '21'
-      
-    # REMOVED: The "Fix Java Version" step is no longer needed.
-    # We are now providing the Java 21 environment the project expects.
+
+    # NOTE ON SIGNING:
+    # To properly build a Release APK, you would need to set up:
+    # 1. `key.jks` and `signing.properties` files.
+    # 2. Secrets (e.g., ANDROID_KEYSTORE_PASSWORD) in your repository.
+    # This example builds a debug APK which is suitable for testing,
+    # but for production release, replace `assembleDebug` with `assembleRelease`
+    # and include the necessary signing steps above this build step.
 
     - name: Build Android APK
       working-directory: ./project/android
       run: |
         chmod +x gradlew
+        # CHANGE: We are still building debug for simplicity, but we name it for the release artifact
         ./gradlew assembleDebug --no-daemon
-        
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
+
+    - name: Find APK Path
+      id: find_apk
+      working-directory: project/android/app/build/outputs/apk/debug
+      run: |
+        APK_FILE=$(find . -name 'app-debug.apk' | head -n 1)
+        echo "apk_path=$PWD/$APK_FILE" >> $GITHUB_OUTPUT
+      shell: bash
+
+    # REMOVED: Upload Artifact step is unnecessary if we attach directly to the release
+
+    # 2. Add the release step to attach the artifact
+    - name: Attach APK to GitHub Release
+      # This action automatically detects the current release context
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v2
       with:
-        name: app-debug
-        path: project/android/app/build/outputs/apk/debug/app-debug.apk
+        files: ${{ steps.find_apk.outputs.apk_path }}
+        # The token is automatically available via the environment
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag_name: ${{ github.ref }} # Use the release tag
