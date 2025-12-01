@@ -21,7 +21,18 @@ const g_client = new OAuth2Client(GOOGLE_CLIENT_ID);
 const app = express();
 
 // --- Middleware ---
-app.use(cors()); 
+app.use(cors({
+  // Allow both your localhost (for testing) and production frontend
+  origin: [
+    'http://localhost:5173', // Vite default
+    'http://localhost:3000', // React default
+    'https://your-frontend-domain.vercel.app' // Your production frontend
+  ],
+  credentials: true, // REQUIRED because your frontend uses credentials: 'include'
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json()); 
 app.use(cookieParser());
 
