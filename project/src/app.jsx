@@ -14,8 +14,6 @@ import {Dashboard} from './ui/dashboard'
 import {ProfilePage} from './ui/profile-page'
 
 // --- CONFIGURATION ---
-// TODO: REPLACE THIS WITH YOUR ACTUAL BACKEND SERVER URL
-// Example: const API_BASE = 'https://my-club-app.render.com';
 const API_BASE = 'https://clubspot-beta.onrender.com'; 
 
 const App = () => {
@@ -27,10 +25,19 @@ const App = () => {
   // --- Initial Fetch & Auth Check ---
   useEffect(() => {
     const checkSession = async () => {
+      // CHANGED: Get token from storage
+      const token = localStorage.getItem('clubspot_token');
+      
+      if (!token) {
+        return; // No token, no session
+      }
+
       try {
-        // CHANGED: Added API_BASE to URL
+        // CHANGED: Use Authorization header
         const res = await fetch(`${API_BASE}/api/auth/me`, { 
-           credentials: 'include' 
+           headers: {
+             'Authorization': `Bearer ${token}`
+           }
         });
 
         if (res.ok) {
@@ -38,13 +45,12 @@ const App = () => {
           setUser(userData); 
           fetchEvents();
         } else {
-          console.log("No valid session found. Logging out.");
-          localStorage.removeItem('clubspot_user'); 
-          setUser(null);
+          console.log("Token invalid or expired. Logging out.");
+          handleLogout(); // Clear invalid token
         }
       } catch (e) {
         console.error("Session check failed", e);
-        setUser(null);
+        handleLogout();
       }
     };
 
@@ -53,7 +59,6 @@ const App = () => {
 
   const fetchEvents = async () => {
     try {
-      // CHANGED: Added API_BASE to URL
       const res = await fetch(`${API_BASE}/api/events`);
       if (res.ok) {
         const data = await res.json();
@@ -64,18 +69,21 @@ const App = () => {
     }
   };
 
-  const handleLogin = async (token) => {
+  const handleLogin = async (googleToken) => {
     try {
-      // CHANGED: Added API_BASE to URL
       const res = await fetch(`${API_BASE}/api/auth/google`, {
         method: 'POST',
-        credentials: 'include', 
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token })
+        body: JSON.stringify({ token: googleToken })
       });
+
       if (res.ok) {
-        const userData = await res.json(); 
-        setUser(userData); 
+        const data = await res.json(); 
+        
+        // CHANGED: Save token to localStorage
+        localStorage.setItem('clubspot_token', data.token);
+        
+        setUser(data.user); 
         fetchEvents();
       }
     } catch (e) {
@@ -85,25 +93,36 @@ const App = () => {
 
   const handleLogout = async () => {
     try {
-      // CHANGED: Added API_BASE to URL
+      // Optional: Tell server we are logging out (stateless, but good for logging)
       await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
+      
+      // CHANGED: Clear token from storage
+      localStorage.removeItem('clubspot_token');
+      
       setUser(null);
       setActiveTab('home');
     } catch (e) {
       console.error("Logout failed", e);
+      // Ensure local cleanup happens even if server call fails
+      localStorage.removeItem('clubspot_token');
+      setUser(null);
     }
   };
 
   const handleJoinEvent = async (eventId) => {
-    if (!user) return;
+    const token = localStorage.getItem('clubspot_token');
+    if (!user || !token) return;
+
     try {
-      // CHANGED: Added API_BASE to URL
       const res = await fetch(`${API_BASE}/api/events/join`, {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // CHANGED: Added Header
+        },
         body: JSON.stringify({ eventId })
       });
+
       if (res.ok) {
         const updatedUser = { ...user, joinedEvents: [...(user.joinedEvents || []), eventId] };
         setUser(updatedUser);
@@ -120,13 +139,16 @@ const App = () => {
   };
 
   const handleComment = async (eventId, text) => {
-    if (!user || !text.trim()) return;
+    const token = localStorage.getItem('clubspot_token');
+    if (!user || !text.trim() || !token) return;
+
     try {
-       // CHANGED: Added API_BASE to URL
        const res = await fetch(`${API_BASE}/api/events/comment`, {
          method: 'POST',
-         credentials: 'include',
-         headers: { 'Content-Type': 'application/json' },
+         headers: { 
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${token}` // CHANGED: Added Header
+         },
          body: JSON.stringify({ eventId, text })
        });
        if (res.ok) {
@@ -136,12 +158,17 @@ const App = () => {
   };
 
   const handleDeleteEvent = async (eventId) => {
+    const token = localStorage.getItem('clubspot_token');
+    if (!token) return;
+    
     if (!confirm("Are you sure you want to delete this event?")) return;
+    
     try {
-      // CHANGED: Added API_BASE to URL
       const res = await fetch(`${API_BASE}/api/events/${eventId}`, {
         method: 'DELETE',
-        credentials: 'include'
+        headers: {
+          'Authorization': `Bearer ${token}` // CHANGED: Added Header
+        }
       });
       if (res.ok) {
         setEvents(events.filter(e => e._id !== eventId));
@@ -152,12 +179,16 @@ const App = () => {
   };
 
   const handleDeleteComment = async (eventId, commentId) => {
+    const token = localStorage.getItem('clubspot_token');
+    if (!token) return;
+
     if (!confirm("Delete this comment?")) return;
     try {
-      // CHANGED: Added API_BASE to URL
       const res = await fetch(`${API_BASE}/api/events/${eventId}/comments/${commentId}`, {
         method: 'DELETE',
-        credentials: 'include'
+        headers: {
+          'Authorization': `Bearer ${token}` // CHANGED: Added Header
+        }
       });
       if (res.ok) {
         fetchEvents(); 

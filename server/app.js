@@ -1,5 +1,4 @@
 const express = require('express');
-const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
@@ -29,27 +28,15 @@ app.use(cors({
     'capacitor://localhost',      // If using Capacitor iOS
     'http://localhost',           // If using Capacitor Android
   ],
-  credentials: true, // This allows the Cookie to be sent/received
+  // credentials: true, // Not strictly needed for Header-based auth, but harmless to keep
   methods: ['POST', 'PUT', 'GET', 'OPTIONS', 'HEAD', 'DELETE'],
 }));
 
-// In your backend app.js
-app.use(session({
-  secret: process.env.SESSION_SECRET, // Your secret
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-    httpOnly: true,
-    // CRITICAL CHANGES BELOW:
-    secure: true,       // Must be true for cross-site cookies (Render uses HTTPS)
-    sameSite: 'none'    // Allows cookie to be sent from different domains (Localhost/App -> Render)
-  }
-}));
-app.set('trust proxy', 1); // Trust Render's proxy so 'secure: true' works
+app.set('trust proxy', 1); 
 
 app.use(express.json()); 
-app.use(cookieParser());
+// Cookie parser is no longer strictly necessary for Auth, but kept if you use it elsewhere
+// app.use(cookieParser()); 
 
 // Serve static files from 'dist' directory
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -99,11 +86,18 @@ async function verifyGoogleToken(token) {
     return ticket.getPayload();
 }
 
+// --- UPDATED AUTH MIDDLEWARE (HEADER BASED) ---
 const authenticateJWT = (req, res, next) => {
-    const token = req.cookies.auth_token;
+    // 1. Check for Authorization header
+    const authHeader = req.headers['authorization'];
+    
+    // 2. Format is usually "Bearer <token>"
+    const token = authHeader && authHeader.split(' ')[1];
+
     if (!token) {
         return res.status(401).json({ error: "Unauthorized: No token provided" });
     }
+
     try {
         const decoded = jwt.verify(token, SECRET_KEY);
         req.userId = decoded.userId; 
@@ -118,7 +112,7 @@ const authenticateJWT = (req, res, next) => {
 // API Routes
 // ==========================================
 
-// 1. Google Auth
+// 1. Google Auth (UPDATED: Returns Token in Body)
 app.post('/api/auth/google', async (req, res) => {
     try {
         const { token: googleToken } = req.body;
@@ -132,34 +126,35 @@ app.post('/api/auth/google', async (req, res) => {
             { email: googleUser.email },
             { $set: { name: googleUser.name, picture: googleUser.picture, lastLogin: new Date() },
               $setOnInsert: { joinedEvents: [], createdAt: new Date() } },
-            { upsert: true, returnDocument: 'after' } // 'after' returns the updated doc
+            { upsert: true, returnDocument: 'after' } 
         );
 
-        // Handle Mongo driver differences: findOneAndUpdate might return { value: doc } or just doc depending on version
         const user = result.value || result; 
 
+        // Generate JWT
         const token = jwt.sign({ userId: user._id, name: user.name }, SECRET_KEY, { expiresIn: '365d' });
 
-        res.cookie('auth_token', token, { 
-            httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', 
-            sameSite: 'strict'
+        // CHANGED: Instead of setting a cookie, we send the token back in the JSON
+        res.status(200).json({ 
+            success: true,
+            token: token, // <--- Sent to frontend
+            user: {
+                _id: user._id, 
+                name: user.name, 
+                picture: user.picture, 
+                joinedEvents: user.joinedEvents
+            }
         });
-
-        res.status(200).json({ _id: user._id, name: user.name, picture: user.picture, joinedEvents: user.joinedEvents });
 
     } catch (e) { 
         console.error(e);
         res.status(500).json({ error: "Authentication failed" });
     }
 });
-
-// 2. Sign Out
 app.post('/api/auth/logout', (req, res) => {
-    res.clearCookie('auth_token');
+    // No cookie to clear server-side needed for JWT (unless using a blacklist)
     res.status(200).json({ success: true, message: "Logged out successfully" });
 });
-
 app.get('/api/auth/me', authenticateJWT, async (req, res) => {
     try {
         const user = await usersCollection.findOne(
@@ -184,12 +179,11 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
-// 3. Create Event (Now Authenticated to capture Creator Name)
+
 app.post('/api/events', authenticateJWT, async (req, res) => {
     try {
         const { title, date, time, location, category, description, image } = req.body;
         
-        // We now get creatorId and creatorName from the JWT token for security/consistency
         const creatorId = req.userId;
         const creatorName = req.userName;
 
@@ -200,7 +194,7 @@ app.post('/api/events', authenticateJWT, async (req, res) => {
         const newEvent = {
             title, date, time, location, category, description, 
             creatorId, 
-            creatorName, // Feature: Show which account posted it
+            creatorName, 
             image: image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87",
             attendees: [],
             comments: [],
@@ -215,7 +209,7 @@ app.post('/api/events', authenticateJWT, async (req, res) => {
     }
 });
 
-// 4. Delete Event (If it is yours)
+// 5. Delete Event 
 app.delete('/api/events/:id', authenticateJWT, async (req, res) => {
     try {
         const eventId = req.params.id;
@@ -227,7 +221,6 @@ app.delete('/api/events/:id', authenticateJWT, async (req, res) => {
             return res.status(404).json({ error: "Event not found" });
         }
 
-        // Authorization Check
         if (event.creatorId !== userId) {
             return res.status(403).json({ error: "Unauthorized: You can only delete your own events" });
         }
@@ -273,7 +266,7 @@ app.post('/api/events/comment', authenticateJWT, async (req, res) => {
         const userName = userDoc.name;
 
         const comment = {
-            _id: new ObjectId(), // Feature: Generate ID for deletion
+            _id: new ObjectId(),
             userId,
             userName,
             text,
@@ -291,13 +284,12 @@ app.post('/api/events/comment', authenticateJWT, async (req, res) => {
     }
 });
 
-// 5. Delete Comment (If it is yours)
+// 6. Delete Comment
 app.delete('/api/events/:eventId/comments/:commentId', authenticateJWT, async (req, res) => {
     try {
         const { eventId, commentId } = req.params;
         const userId = req.userId;
 
-        // Use MongoDB $pull to remove the comment where _id matches AND userId matches
         const result = await eventsCollection.updateOne(
             { _id: new ObjectId(eventId) },
             { 

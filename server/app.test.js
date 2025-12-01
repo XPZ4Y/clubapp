@@ -81,7 +81,6 @@ const mockCollection = (collectionName) => ({
              const originalLen = doc[key].length;
              doc[key] = doc[key].filter(item => {
                  // Check if item matches the filter criteria
-                 // This is a simple mock implementation matching string IDs
                  return !(item._id.toString() === filter._id.toString() && item.userId === filter.userId);
              });
              if (doc[key].length < originalLen) modifiedCount = 1;
@@ -105,7 +104,7 @@ jest.mock('mongodb', () => {
 });
 
 describe('API Integration Flow', () => {
-  let authCookie;
+  let authToken; // CHANGED: Using Token instead of Cookie
   let userId;
   let eventId;
 
@@ -118,23 +117,28 @@ describe('API Integration Flow', () => {
       .send({ token: 'VALID_GOOGLE_TOKEN' });
     
     expect(res.statusCode).toBe(200);
-    userId = res.body._id;
-    authCookie = res.headers['set-cookie'][0];
+    expect(res.body.success).toBe(true);
+    
+    // CHANGED: Capture Token from Body
+    userId = res.body.user._id;
+    authToken = res.body.token; 
+    
+    expect(authToken).toBeDefined();
   });
 
   test('GET /api/auth/me (Session Check)', async () => {
     const res = await request(app)
       .get('/api/auth/me')
-      .set('Cookie', authCookie);
+      .set('Authorization', `Bearer ${authToken}`); // CHANGED: Header based auth
     
     expect(res.statusCode).toBe(200);
-    expect(res.body.email).toBe('testuser@example.com');
+    expect(res.body.name).toBe('Test User');
   });
 
   test('POST /api/events (Create Event - Authenticated)', async () => {
     const res = await request(app)
       .post('/api/events')
-      .set('Cookie', authCookie) // Now required
+      .set('Authorization', `Bearer ${authToken}`) // CHANGED
       .send({
         title: "Test Event",
         date: "2023-12-25",
@@ -152,7 +156,7 @@ describe('API Integration Flow', () => {
   test('POST /api/events/join (Join Event)', async () => {
     const res = await request(app)
       .post('/api/events/join')
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`) // CHANGED
       .send({ eventId });
 
     expect(res.statusCode).toBe(200);
@@ -161,7 +165,7 @@ describe('API Integration Flow', () => {
   test('POST /api/events/comment (Add Comment)', async () => {
     const res = await request(app)
       .post('/api/events/comment')
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`) // CHANGED
       .send({ eventId, text: "Nice event!" });
 
     expect(res.statusCode).toBe(200);
@@ -186,7 +190,7 @@ describe('API Integration Flow', () => {
     // Delete
     res = await request(app)
       .delete(`/api/events/${eventId}/comments/${commentId}`)
-      .set('Cookie', authCookie);
+      .set('Authorization', `Bearer ${authToken}`); // CHANGED
     
     expect(res.statusCode).toBe(200);
 
@@ -199,7 +203,7 @@ describe('API Integration Flow', () => {
   test('DELETE /api/events/:id (Delete Event)', async () => {
     const res = await request(app)
       .delete(`/api/events/${eventId}`)
-      .set('Cookie', authCookie);
+      .set('Authorization', `Bearer ${authToken}`); // CHANGED
 
     expect(res.statusCode).toBe(200);
 
@@ -212,8 +216,6 @@ describe('API Integration Flow', () => {
   test('POST /api/auth/logout (Sign Out)', async () => {
     const res = await request(app).post('/api/auth/logout');
     expect(res.statusCode).toBe(200);
-    // Verify cookie is cleared (headers usually contain Set-Cookie with empty value or expires past)
-    const setCookie = res.headers['set-cookie'][0];
-    expect(setCookie).toMatch(/auth_token=;/); 
+    // No cookie check needed anymore as we are stateless on server side for logout
   });
 });
