@@ -3,6 +3,8 @@ name: Android Release Build and Deploy
 on:
   # Trigger immediately when this specific file is modified
   push:
+    paths:
+      - '.github/workflows/android.yml'
   # 1. Change the trigger to run only when a new release is published
   release:
     types: [published]
@@ -100,7 +102,15 @@ jobs:
         ./gradlew assembleDebug --no-daemon
         
         # Find the generated APK file path and save it as an output variable
-        APK_DIR="../app/build/outputs/apk/debug"
+        # FIXED: Removed "../" because 'app' is inside 'project/android'
+        APK_DIR="app/build/outputs/apk/debug"
+        
+        # Debugging: List contents if strict path fails, to help diagnose if path varies
+        if [ ! -d "$APK_DIR" ]; then
+            echo "::warning::Standard APK path not found at $APK_DIR. Listing 'app/build' content:"
+            find app/build -maxdepth 3 || true
+        fi
+        
         APK_FILE=$(find $APK_DIR -name 'app-debug.apk' | head -n 1)
         
         # Ensure the path is absolute for the release step
