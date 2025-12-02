@@ -92,8 +92,7 @@ jobs:
         alias: ${{ secrets.KEY_ALIAS }}
         keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
         keyPassword: ${{ secrets.KEY_PASSWORD }}
-      # This action automatically finds the apk in the directory and signs it.
-      # It outputs the path to the signed file as 'signedReleaseFile'
+        buildToolsVersion: 34.0.0   # <--- Build tools version
 
     # 3. Verify and Export Path
     - name: Verify Signed APK
