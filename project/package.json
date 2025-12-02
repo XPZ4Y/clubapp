@@ -12,6 +12,7 @@
 		"@capacitor/android": "^7.4.4",
 		"@capacitor/cli": "^7.4.4",
 		"@capacitor/core": "^7.4.4",
+		"@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
 		"lucide-react": "^0.554.0",
 		"preact": "^10.19.0"
 	},

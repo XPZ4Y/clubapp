@@ -1,11 +1,19 @@
 {
-  "appId": "com.mynewcompany.mynewapp",
+  "appId": "com.xpz4y.kpnc",
   "appName": "ClubSpot",
   "webDir": "dist",
   "bundledWebRuntime": false,
-  "plugins": {},
+  "plugins": {
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "serverClientId": "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
+      "androidClientId": "YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
+  },
   "server": {
-    "cleartext": true
+    "cleartext": true,
+    "androidScheme": "http"
   },
   "android": {
     "assets": "ic_launcher"

@@ -1,21 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Calendar, Users, Home, MessageSquare, Bell, Search, MapPin, 
-  Clock, ChevronRight, Plus, Heart, Share2, Settings, LogOut, 
-  Trophy, User, X, Loader
-} from 'lucide-react';
+import { Users } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
-import {GOOGLE_CLIENT_ID} from './google-client-id'
-
-
+// Keep this for Web fallback
+import { GOOGLE_CLIENT_ID } from './google-client-id';
 
 export const LoginOverlay = ({ onLogin }) => {
   const googleButtonRef = useRef(null);
+  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
+    // 1. Initialize Capacitor Google Auth (For Android)
+    if (isNative) {
+      GoogleAuth.initialize();
+      return; 
+    }
+
+    // 2. Web Fallback Logic (Your original code)
     if (GOOGLE_CLIENT_ID === "PASTE_YOUR_CLIENT_ID_HERE") {
-        console.warn("ClubSpot: Google Client ID is missing.");
-        return;
+      console.warn("ClubSpot: Google Client ID is missing.");
+      return;
     }
 
     const initializeGsi = () => {
@@ -53,7 +58,21 @@ export const LoginOverlay = ({ onLogin }) => {
         }
       };
     }
-  }, []);
+  }, [isNative]);
+
+  const handleNativeGoogleLogin = async () => {
+    try {
+      const user = await GoogleAuth.signIn();
+      // The plugin returns 'authentication.idToken' which matches the web 'credential'
+      if (user.authentication.idToken) {
+        onLogin(user.authentication.idToken);
+      } else {
+        console.error("No ID token received from Google");
+      }
+    } catch (error) {
+      console.error("Native Google Login Failed", error);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[60] bg-indigo-900/90 backdrop-blur-sm flex items-center justify-center p-4">
@@ -66,13 +85,29 @@ export const LoginOverlay = ({ onLogin }) => {
           <p className="text-gray-500">Connect, Collaborate, Create.</p>
         </div>
         
-        <div className="space-y-3 min-h-[50px] flex justify-center">
-          {GOOGLE_CLIENT_ID === "PASTE_YOUR_CLIENT_ID_HERE" ? (
-             <div className="text-red-500 text-xs font-bold bg-red-50 p-3 rounded-lg border border-red-100">
-               ⚠️ Please paste your Google Client ID in app.jsx line 10 to see the login button.
-             </div>
+        <div className="space-y-3 min-h-[50px] flex justify-center w-full">
+          {/* NATIVE ANDROID BUTTON */}
+          {isNative ? (
+            <button
+              onClick={handleNativeGoogleLogin}
+              className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-md p-3 hover:bg-gray-50 transition-colors shadow-sm"
+            >
+              <img 
+                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+                alt="Google" 
+                className="w-5 h-5"
+              />
+              <span className="text-gray-700 font-medium font-roboto">Sign in with Google</span>
+            </button>
           ) : (
-             <div ref={googleButtonRef} className="w-full flex justify-center"></div>
+            /* WEB BUTTON CONTAINER */
+            GOOGLE_CLIENT_ID === "PASTE_YOUR_CLIENT_ID_HERE" ? (
+               <div className="text-red-500 text-xs font-bold bg-red-50 p-3 rounded-lg border border-red-100">
+                 ⚠️ Please paste your Google Client ID in app.jsx line 10 to see the login button.
+               </div>
+            ) : (
+               <div ref={googleButtonRef} className="w-full flex justify-center"></div>
+            )
           )}
         </div>
           
