@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - '.github/workflows/android.yml'
+      - 'project/'
   # 1. Change the trigger to run only when a new release is published
   release:
     types: [published]
