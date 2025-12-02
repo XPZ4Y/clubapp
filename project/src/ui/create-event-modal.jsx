@@ -17,15 +17,26 @@ export const CreateEventModal = ({ isOpen, onClose, user, refreshEvents }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    // 1. Summon the Royal Seal from the archives
+    const token = localStorage.getItem('clubspot_token'); 
+
     try {
       const response = await fetch('/api/events', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          // 2. Brandish the Seal so the Gatekeeper lets us pass!
+          'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify({ ...formData, creatorId: user._id })
       });
       if (response.ok) {
         refreshEvents();
         onClose();
+      } else {
+        // Optional: A scrying orb to see why the spell fizzled if not 401
+        console.error("The server rejected our offering:", response.status);
       }
     } catch (err) {
       console.error(err);

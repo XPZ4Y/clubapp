@@ -14,7 +14,7 @@ import {Dashboard} from './ui/dashboard'
 import {ProfilePage} from './ui/profile-page'
 
 // --- CONFIGURATION ---
-const API_BASE = 'https://clubspot-beta.onrender.com'; 
+const API_BASE = ''; 
 
 const App = () => {
   const [user, setUser] = useState(null); 
