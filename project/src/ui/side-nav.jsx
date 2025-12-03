@@ -12,7 +12,9 @@ export const SideNav = ({ activeTab, setActiveTab }) => (
     </div>
     <div className="flex flex-col gap-6 w-full px-4">
       {[
+
         { id: 'home', icon: Home, label: 'Home' },
+        { id: 'add', icon: Plus, label: 'New', isFab: true },
         { id: 'events', icon: Calendar, label: 'Events' },
         { id: 'community', icon: Users, label: 'Club' },
         { id: 'profile', icon: User, label: 'Profile' },
