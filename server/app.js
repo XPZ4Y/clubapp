@@ -14,7 +14,7 @@ const DATABASE_NAME = "clubspot";
 // --- Google Auth Setup ---
 const { OAuth2Client } = require('google-auth-library');
 // CLIENT IDs
-const WEB_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "YOUR_WEB_CLIENT_ID";
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "YOUR_WEB_CLIENT_ID";
 const ANDROID_CLIENT_ID = process.env.ANDROID_CLIENT_ID || "YOUR_ANDROID_CLIENT_ID";
 const g_client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
