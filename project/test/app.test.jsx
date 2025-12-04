@@ -6,7 +6,6 @@ import App from '../src/app.jsx';
 // Import shared data
 import { MOCK_USER, MOCK_EVENTS } from './fixtures';
 
-// --- LOCAL MOCKS (Specific to this test only) ---
 // We keep SideNav here because other tests might want to test the REAL SideNav.
 vi.mock('../src/ui/side-nav', () => ({
   SideNav: () => null 
@@ -17,6 +16,7 @@ const setupMockServer = () => {
   return vi.fn(async (url, options = {}) => {
     const method = options.method || 'GET';
     const headers = options.headers || {};
+    const body = options.body || 'No Client ID provided';
 
     // 🛡️ MIDDLEWARE MOCK: Check for Valid Token
     const requireAuth = () => {
@@ -30,9 +30,9 @@ const setupMockServer = () => {
       return null; // Pass
     };
 
-    // 1. Auth: Google Login (Public)
-    // Matches app.js: returns { success: true, token, user }
+    // 1. Auth: Google Login (Public) !!relevant
     if (url.includes('/api/auth/google') && method === 'POST') {
+      console.log(body)
       return { 
         ok: true, 
         json: async () => ({ 
@@ -62,7 +62,6 @@ const setupMockServer = () => {
        return { ok: true, json: async () => MOCK_EVENTS };
     }
 
-    // --- FROM HERE DOWN, ALL ROUTES ARE PROTECTED ---
 
     // 5. Events: Join (POST) [PROTECTED]
     if (url.includes('/api/events/join') && method === 'POST') {
@@ -112,8 +111,7 @@ const setupMockServer = () => {
   });
 };
 
-// --- THE TESTS ---
-describe('Full App Integration', () => {
+describe('UI-API test', () => {
   
   beforeEach(() => {
     localStorage.clear();
@@ -124,6 +122,11 @@ describe('Full App Integration', () => {
   it('Render Login Overlay', async () => {
     render(<App />);
     expect(await screen.findByText(/Connect, Collaborate, Create/i)).toBeInTheDocument();
+
+    const sigIn = await screen.findByText(/Sign in with Google|Sign in|Sign out/i);
+    sigIn.click();
+    console.log("SSIGNIN")
+    //console.log(Capacitor)
   });
 
   it('if(token?) show events', async () => {
@@ -200,13 +203,6 @@ describe('Full App Integration', () => {
     });
   });
 
-  /* * ---------------------------------------------------------------------------
-   * 📜 The Architect's Decree: We shall attempt to forge a new realm (Event).
-   * We summon the creation modal. Alas, the 'New' text is invisible to the
-   * naked eye (DOM), hidden within the mobile navigation's styles. We must
-   * seek the indigo seal (button) directly to trigger the modal.
-   * ---------------------------------------------------------------------------
-   */
   it('allows a user to create a new event', async () => {
     localStorage.setItem('clubspot_token', 'valid_token');
     const { container } = render(<App />);
@@ -249,5 +245,31 @@ describe('Full App Integration', () => {
         })
       );
     });
+  });
+
+  it('if(token?): logout', async () => {
+    localStorage.setItem('clubspot_token', 'valid_token');
+    render(<App />);
+
+    // 1. Wait for the realm to load
+    await screen.findAllByText('Dragon Boat Festival');
+
+    // 2. Navigate to Profile
+    const profileNav = screen.getByText('Profile'); 
+    profileNav.click();
+
+    // 3. Find and Click Logout
+    // We wait for the "Logout" text to appear (assumed to be in ProfilePage)
+    // If your button only has an icon, you might need container.querySelector('.text-red-500')
+    const logoutBtn = await screen.findByText(/Log out|Logout|Sign out/i);
+    logoutBtn.click();
+
+    // 4. Verify the Token is destroyed
+    await waitFor(() => {
+       expect(localStorage.getItem('clubspot_token')).toBeNull();
+    });
+
+    // 5. Verify we have returned to the Login Gate
+    expect(await screen.findByText(/Connect, Collaborate, Create/i)).toBeInTheDocument();
   });
 });

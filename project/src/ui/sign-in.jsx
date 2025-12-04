@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Users } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
@@ -17,8 +17,8 @@ export const LoginOverlay = ({ onLogin }) => {
       return; 
     }
 
-    // 2. Web Fallback Logic (Your original code)
-    if (GOOGLE_CLIENT_ID === "PASTE_YOUR_CLIENT_ID_HERE") {
+    // 2. Web Fallback Logic
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes("YOUR_CLIENT_ID")) {
       console.warn("ClubSpot: Google Client ID is missing.");
       return;
     }
@@ -53,7 +53,7 @@ export const LoginOverlay = ({ onLogin }) => {
       script.onload = initializeGsi;
       document.body.appendChild(script);
       return () => {
-        if(document.body.contains(script)) {
+        if(document.body && document.body.contains(script)) {
             document.body.removeChild(script);
         }
       };
@@ -63,11 +63,12 @@ export const LoginOverlay = ({ onLogin }) => {
   const handleNativeGoogleLogin = async () => {
     try {
       const user = await GoogleAuth.signIn();
-      // The plugin returns 'authentication.idToken' which matches the web 'credential'
-      if (user.authentication.idToken) {
+      // On Android, 'authentication.idToken' is usually the one you want to send to backend
+      if (user.authentication && user.authentication.idToken) {
         onLogin(user.authentication.idToken);
       } else {
-        console.error("No ID token received from Google");
+        console.error("No ID token received from Google Plugin", user);
+        alert("Google Sign-In failed to retrieve token.");
       }
     } catch (error) {
       console.error("Native Google Login Failed", error);
@@ -90,7 +91,7 @@ export const LoginOverlay = ({ onLogin }) => {
           {isNative ? (
             <button
               onClick={handleNativeGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-md p-3 hover:bg-gray-50 transition-colors shadow-sm"
+              className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-md p-3 hover:bg-gray-50 transition-colors shadow-sm active:bg-gray-100"
             >
               <img 
                 src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
@@ -101,9 +102,9 @@ export const LoginOverlay = ({ onLogin }) => {
             </button>
           ) : (
             /* WEB BUTTON CONTAINER */
-            GOOGLE_CLIENT_ID === "PASTE_YOUR_CLIENT_ID_HERE" ? (
+            (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes("YOUR_CLIENT_ID")) ? (
                <div className="text-red-500 text-xs font-bold bg-red-50 p-3 rounded-lg border border-red-100">
-                 ⚠️ Please paste your Google Client ID in app.jsx line 10 to see the login button.
+                 ⚠️ Thou needst google  client ID.
                </div>
             ) : (
                <div ref={googleButtonRef} className="w-full flex justify-center"></div>

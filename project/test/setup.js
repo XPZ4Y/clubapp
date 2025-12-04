@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 import { cleanup } from '@testing-library/preact';
 import { afterEach } from 'vitest';
 
-// --- 1. GLOBAL BROWSER MOCKS ---
+
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn(),
 }));
@@ -16,7 +16,7 @@ global.google = {
   }
 };
 
-// --- 2. LIBRARY MOCKS (The "Roll Call") ---
+
 // We put this here so EVERY test file automatically mocks Lucide.
 vi.mock('lucide-react', () => {
   const icons = [
@@ -32,13 +32,13 @@ vi.mock('lucide-react', () => {
 
 vi.mock('@capacitor/core', () => ({
   Capacitor: {
-    isNativePlatform: () => false
+    isNativePlatform: () => true //false if testing apps, true if not
   }
 }));
 
 // Mock the Google Auth plugin (unused in Web mode, but good safety)
 vi.mock('@codetrix-studio/capacitor-google-auth', () => ({
-  GoogleAuth: { initialize: vi.fn(), signIn: vi.fn() }
+  GoogleAuth: { initialize: vi.fn(), signIn: vi.fn(()=>{ return {authentication: {idToken: "chris OIIA"} }}), signOut: vi.fn() }
 }));
 
 // --- 3. CLEANUP ---

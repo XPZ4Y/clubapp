@@ -25,6 +25,18 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './test/setup.js',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      // exclude files that are just config/mocks
+      exclude: [
+        'node_modules/',
+        'setup.js', 
+        'fixtures.js', // Based on your uploaded files
+        '*.config.js',
+        '**/*.test.jsx'
+      ],
+    },
     // (Remove the alias from here, for it is now in the resolve block above)
   }
 

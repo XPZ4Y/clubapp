@@ -21,3 +21,6 @@ logs/
 
 #ignore the notes file
 notes/
+
+#ignore the coverage file
+coverage/

@@ -4,6 +4,7 @@ import {
   Clock, ChevronRight, Plus, Heart, Share2, Settings, LogOut, 
   Trophy, User, X, Loader
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core'; // Import Capacitor
 
 import {LoginOverlay} from './ui/sign-in'
 import {CreateEventModal} from './ui/create-event-modal'
@@ -13,8 +14,12 @@ import {EventCard} from './ui/event-card'
 import {Dashboard} from './ui/dashboard'
 import {ProfilePage} from './ui/profile-page'
 
-// --- CONFIGURATION ---
-const API_BASE = ''; 
+// --- CONFIGURATconst isNative = Capacitor.isNativePlatform();
+const isNative = Capacitor.isNativePlatform();
+const API_BASE = isNative 
+  ? 'https://clubspot-beta.onrender.com' // Use your deployed Render URL for easiest mobile testing
+  // OR use your local IP: 'http://192.168.1.X:3000' 
+  : '';
 
 const App = () => {
   const [user, setUser] = useState(null); 
@@ -25,15 +30,11 @@ const App = () => {
   // --- Initial Fetch & Auth Check ---
   useEffect(() => {
     const checkSession = async () => {
-      // CHANGED: Get token from storage
       const token = localStorage.getItem('clubspot_token');
       
-      if (!token) {
-        return; // No token, no session
-      }
+      if (!token) return; 
 
       try {
-        // CHANGED: Use Authorization header
         const res = await fetch(`${API_BASE}/api/auth/me`, { 
            headers: {
              'Authorization': `Bearer ${token}`
@@ -46,14 +47,14 @@ const App = () => {
           fetchEvents();
         } else {
           console.log("Token invalid or expired. Logging out.");
-          handleLogout(); // Clear invalid token
+          handleLogout(); 
         }
       } catch (e) {
         console.error("Session check failed", e);
-        handleLogout();
+        // Don't auto-logout immediately on network error (common on mobile)
+        // unless it's a 401/403, but here we just catch generic errors.
       }
     };
-
     checkSession();
   }, []);
 
@@ -79,7 +80,6 @@ const App = () => {
 
       if (res.ok) {
         const data = await res.json(); 
-        
         // CHANGED: Save token to localStorage
         localStorage.setItem('clubspot_token', data.token);
         
@@ -95,12 +95,18 @@ const App = () => {
     try {
       // Optional: Tell server we are logging out (stateless, but good for logging)
       await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST' });
-      
-      // CHANGED: Clear token from storage
       localStorage.removeItem('clubspot_token');
       
       setUser(null);
       setActiveTab('home');
+
+      //if native, signout from phone
+      if (isNative) {
+        // Dynamic import to avoid issues on web
+        const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+        await GoogleAuth.signOut();
+        
+      }
     } catch (e) {
       console.error("Logout failed", e);
       // Ensure local cleanup happens even if server call fails
