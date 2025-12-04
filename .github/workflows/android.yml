@@ -123,7 +123,7 @@ jobs:
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: app-release-signed
+        name: ClubSpot-vishy
         path: ${{ steps.verify_apk.outputs.apk_path }}
 
     - name: Attach APK to GitHub Release
